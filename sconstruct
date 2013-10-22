@@ -1,0 +1,33 @@
+# Set the include path for all projects within this directory tree to always be relative
+# to src. Don't define other include paths. This keeps includes exceedingly clean and
+# regular, and it makes includes unambiguous instead of mysterious.
+# Also, force all builds to be done with C++ 11 syntax and libraries.
+env = Environment(CPPPATH='#/src', CXXFLAGS='-std=c++0x')
+
+# Do some very simple sanity checking on tools. Prove that we have a compiler
+# that's able to deal with C++ 11 constructs (typically, g++ 4.6 or later).
+
+config = Configure(env)
+if not config.CheckCXX():
+    print('C++ compiler unavailable.')
+    Exit(1)
+
+required_headers = ['string', 'utility', 'vector', 'memory', 'climits', 'cinttypes', 'atomic', 'mutex', 'thread', 'unordered_map']
+for rh in required_headers:
+    if not config.CheckHeader(rh, language='C++'):
+        print('Header <%s> is unavailable, but required to compile.' % rh)
+        Exit(1)
+
+AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
+
+# Unless the user requests verbose mode, simplify the strings that get displayed
+# as each file is handled.
+if not GetOption('verbose'):
+    env['CXXCOMSTR'] = "Compiling $SOURCE ..."
+    env['LINKCOMSTR'] = "Linking $TARGET ..."
+
+Export('env')
+
+common = SConscript('src/common/sconscript', variant_dir='build/common', duplicate=0)
+binary = SConscript('src/mtm/sconscript', variant_dir='build/mtm', duplicate=0)
+SConscript('src/test/sconscript', variant_dir='build/test', duplicate=0)

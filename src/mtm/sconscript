@@ -1,0 +1,6 @@
+Import('env')
+
+prog = env.Program(target='mtm', source=Glob('*.cpp'))
+
+Return('prog')
+

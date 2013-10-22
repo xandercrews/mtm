@@ -1,0 +1,6 @@
+Import('env')
+
+lib = env.Library(target='common', source=Glob('*.cpp'))
+
+Return('lib')
+
