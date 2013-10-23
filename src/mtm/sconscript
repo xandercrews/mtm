@@ -1,6 +1,7 @@
 Import('env')
+Import('common')
 
-prog = env.Program(target='mtm', source=Glob('*.cpp'))
+prog = env.Program(target='mtm', source=Glob('*.cpp'), LIBS=common)
 
 Return('prog')
 

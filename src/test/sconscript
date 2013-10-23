@@ -1,0 +1,24 @@
+Import('env')
+Import('common')
+
+# Create an independent environment to run tests, so we don't
+# propagate any changes back to the master env.
+test_env = env.Clone()
+
+# Make sure gtest is in the include path.
+cpppath = test_env['CPPPATH']
+# If cpppath is a single string instead of a list...
+if hasattr(cpppath, 'lower'):
+	cpppath = [cpppath]
+cpppath.append('gmock/gtest/include')
+test_env['CPPPATH'] = cpppath
+
+# Build all .cpp files in this folder into a single binary.
+sources = Glob('*.cpp')
+sources.extend(Glob('gmock/gtest/src/gtest_main.cc'))
+
+gtest = SConscript('gmock/scons/sconscript', variant_dir='build/gmock', duplicate=0)
+
+testrunner = test_env.Program(target='mtm-testrunner', source=sources, LIBS=[common, gtest])
+
+Return('testrunner')

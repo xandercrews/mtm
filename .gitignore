@@ -12,6 +12,10 @@
 *.la
 *.a
 
+# Eclipse artifacts
+.project
+.cproject
+
 # SCons output
 .sconf_temp
 .sconsign.dblite
