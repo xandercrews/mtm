@@ -88,6 +88,8 @@ std::string & Arg::append(std::string & txt, char const * format) const {
 	case atCharPtr:
 		if (ptr_value == NULL) {
 			txt += "(null)";
+		} else {
+			txt += ptr_value;
 		}
 		break;
 	case atString:
@@ -174,8 +176,8 @@ static char const * get_fmt_spec(char const * first_char_after, char * fmtspec_b
 						fmtspec_buf[fmtspec_len] = 0;
 						fmtspec = fmtspec_buf;
 					}
-					last_char_of_argref = end_of_fmtspec;
 				}
+				last_char_of_argref = end_of_fmtspec;
 			}
 		}
 	}
@@ -213,7 +215,7 @@ static void expand(char const * format, std::string & txt, Arg const * args[], s
 				char fmtspec_buf[FMTSPEC_BUF_LEN];
 				// Go look for it. This call also adjusts p as needed.
 				char const * fmtspec = get_fmt_spec(p + 2, fmtspec_buf, p);
-				txt += arg->to_string(fmtspec);
+				arg->append(txt, fmtspec);
 
 			} else {
 				txt += c;
