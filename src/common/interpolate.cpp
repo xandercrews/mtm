@@ -62,6 +62,7 @@ std::string & Arg::append(std::string & txt, char const * format) const {
 				format = "%u";
 			}
 			sprintf(buf, format, uint_value);
+			txt += buf;
 		}
 		break;
 	case atInt:
@@ -71,6 +72,7 @@ std::string & Arg::append(std::string & txt, char const * format) const {
 				format = "%d";
 			}
 			sprintf(buf, format, int_value);
+			txt += buf;
 		}
 		break;
 	case atDouble:
@@ -80,12 +82,14 @@ std::string & Arg::append(std::string & txt, char const * format) const {
 				format = "%f";
 			}
 			sprintf(buf, format, double_value);
+			txt += buf;
 		}
 		break;
 	case atCharPtr:
 		if (ptr_value == NULL) {
 			txt += "(null)";
 		}
+		break;
 	case atString:
 		if (!str_value->empty()) {
 			txt += *str_value;
@@ -107,7 +111,7 @@ std::string & Arg::append(std::string & txt, char const * format) const {
 const size_t FMTSPEC_BUF_LEN = 64;
 
 /**
- * Given an arg ref such as @1 or @2{file name} or @3{angle of refraction:%3.2f},
+ * Given an arg ref such as %1 or %2{file name} or %3{angle of refraction:%3.2f},
  * identify the format specifier (which is NULL for the first two examples, and
  * "%3.2f" for the last example).
  *
@@ -193,11 +197,11 @@ static void expand(char const * format, std::string & txt, Arg const * args[], s
 	for (char const * p = format; p < end; ++p) {
 		char c = *p;
 		// Look for potential arg refs.
-		if (c == '@' && p < end - 1) {
+		if (c == '%' && p < end - 1) {
 			char c2 = p[1];
 
-			// Doubled @@ gets expanded to single.
-			if (c2 == '@') {
+			// Doubled %% gets expanded to single.
+			if (c2 == '%') {
 				txt += c2;
 				++p;
 

@@ -4,70 +4,57 @@
 # Also, force all builds to be done with C++ 11 syntax and libraries.
 env = Environment(CPPPATH='#/src', CXXFLAGS='-std=c++0x')
 
-# Make sure all other scripts can use the env we've built.
-Export('env')
-
-# Build the core library for mtm.
-common = SConscript('src/common/sconscript', variant_dir='build/common', duplicate=0)
-Export('common')
-
-# Build the main binary.
-binary = SConscript('src/mtm/sconscript', variant_dir='build/mtm', duplicate=0)
-Default(binary)
-
-# Build tests.
-testrunner = SConscript('src/test/sconscript', variant_dir='build/test', duplicate=0)
-Default(testrunner)
-
-# -------------------- gory and mostly uninteresting details --------------------
-
-def autoconf():
-	import os, sys
-	config_file = './config.log'
-	f = open(config_file, 'w')
-	old_stdout = sys.stdout
-	sys.stdout = f
-	okay = False
-	try:
-		# Do some very simple sanity checking on tools. Prove that we have a compiler
-		# that's able to deal with C++ 11 constructs (typically, g++ 4.6 or later).
-		config = Configure(env)
-		if not config.CheckCXX():
-			print('C++ compiler unavailable.')
-			Exit(1)
-
-		# Check to see if we can see some headers that we're likely to need. This
-		# check can be representative rather than exhaustive, because the bar for
-		# portability is modest (we're only going to be building this at Adaptive,
-		# on relatively similar systems).
-		required_headers = ['string', 'utility', 'vector', 'memory', 'climits',
-			'atomic', 'mutex', 'thread', 'unordered_map', 'cstdint']
-		missing = []
-		for rh in required_headers:
-			if not config.CheckHeader(rh, language='C++'):
-				missing.append(rh)
-		if missing:
-			print('The following headers are unavailable, but required to compile: %s' % ', '.join(['<%s>' % h for h in missing]))
-			Exit(1)
-		okay = True
-	finally:
-		f.close()
-		sys.stdout = old_stdout
-		if okay:
-			print('Config checks passed.')
-		else:
-			f = open(config_file, 'r')
-			txt = f.read()
-			f.close()
-			print(txt)
-
-autoconf()
-
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
+AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
 
 # Unless the user requests verbose mode, simplify the strings that get displayed
 # as each file is handled.
 if not GetOption('verbose'):
     env['CXXCOMSTR'] = "Compiling $SOURCE ..."
     env['LINKCOMSTR'] = "Linking $TARGET ..."
+
+if GetOption('release'):
+	env['CCFLAGS'] = '-O3'
+else:
+	env['CCFLAGS'] = '-g'
+
+# Make sure all other scripts can use the Environments we've built.
+Export('env')
+
+# Build the core library for mtm, both release and debug.
+common = SConscript('src/common/sconscript', variant_dir='build/common', duplicate=0)
+Export('common')
+
+# Build the main binary, both release and debug.
+binary = SConscript('src/mtm/sconscript', variant_dir='build/mtm', duplicate=0)
+Default(binary)
+
+# Build tests, both release and debug.
+testrunner = SConscript('src/test/sconscript', variant_dir='build/test', duplicate=0)
+
+Default(testrunner)
+
+# -------------------- gory and mostly uninteresting details --------------------
+
+# Do some very simple sanity checking on tools. Prove that we have a compiler
+# that's able to deal with C++ 11 constructs (typically, g++ 4.6 or later).
+config = Configure(env)
+if not config.CheckCXX():
+	print('C++ compiler unavailable.')
+	Exit(1)
+
+# Check to see if we can see some headers that we're likely to need. This
+# check can be representative rather than exhaustive, because the bar for
+# portability is modest (we're only going to be building this at Adaptive,
+# on relatively similar systems).
+required_headers = ['string', 'utility', 'vector', 'memory', 'climits',
+	'atomic', 'mutex', 'thread', 'unordered_map', 'cstdint']
+missing = []
+for rh in required_headers:
+	if not config.CheckHeader(rh, language='C++'):
+		missing.append(rh)
+if missing:
+	print('The following headers are unavailable, but required to compile: %s' % ', '.join(['<%s>' % h for h in missing]))
+	Exit(1)
+
 

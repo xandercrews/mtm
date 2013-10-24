@@ -36,7 +36,7 @@ class Arg;
  * Generate a string that has 1 arg substituted.
  *
  * @param format A template for the string we want to produce. Args are referenced by
- *               their 1-based index, as @1, @2, @3, and so forth. Format specifiers
+ *               their 1-based index, as %1, %2, %3, and so forth. Format specifiers
  *               and names for args can be added with a {...} suffix. For example, if
  *               your second arg is a floating-point angle between 0 and 90 degrees,
  *               you could refer to it as "@2{angle:%.1f}", which would render it with
@@ -152,6 +152,15 @@ std::string interpolate(char const * txt, Arg const & arg1, Arg const & arg2,
 		Arg const & arg3, Arg const & arg4, Arg const & arg5=Arg::Empty,
 		Arg const & arg6=Arg::Empty, Arg const & arg7=Arg::Empty,
 		Arg const & arg8=Arg::Empty, Arg const & arg9=Arg::Empty);
+
+/**
+ * Generate a string that has no args substituted. (There is no need of interpolate
+ * functionality in such a case, but we provide the wrapper so interpolate can be
+ * used even without args, just like printf can.)
+ *
+ * @param format A template for the string we want to produce.
+ */
+inline std::string interpolate(char const * txt) { return txt; }
 
 
 #endif /* INTERPOLATE_H_ */
