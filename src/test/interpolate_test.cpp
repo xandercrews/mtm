@@ -1,7 +1,7 @@
 #include <limits.h>
+
 #include "common/interpolate.h"
 #include "gtest/gtest.h"
-
 
 // First test
 TEST(InterpolateTest, OneArg) {
