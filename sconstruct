@@ -22,45 +22,46 @@ Default(testrunner)
 # -------------------- gory and mostly uninteresting details --------------------
 
 def autoconf():
-	import os
-	configure_file = './config.log'
-	if not os.path.isfile(configure_file):
-		import sys
-		f = open(configure_file, 'w')
-		old_stdout = sys.stdout
-		sys.stdout = f
-		okay = False
-		try:
-			# Do some very simple sanity checking on tools. Prove that we have a compiler
-			# that's able to deal with C++ 11 constructs (typically, g++ 4.6 or later).
-			config = Configure(env)
-			if not config.CheckCXX():
-			    print('C++ compiler unavailable.')
-			    Exit(1)
-			
-			# Check to see if we can see some headers that we're likely to need. This
-			# check can be representative rather than exhaustive, because the bar for
-			# portability is modest (we're only going to be building this at Adaptive,
-			# on relatively similar systems).
-			required_headers = ['string', 'utility', 'vector', 'memory', 'climits', 
-			    'cinttypes', 'atomic', 'mutex', 'thread', 'unordered_map']
-			for rh in required_headers:
-			    if not config.CheckHeader(rh, language='C++'):
-			        print('Header <%s> is unavailable, but required to compile.' % rh)
-			        Exit(1)
-			okay = True
-		finally:
-			f.close()
-			sys.stdout = old_stdout
-			if okay:
-				print('Config checks passed.')
-			else:
-				f = open(config_file, 'r')
-				txt = f.read()
-				f.close()
-				print(txt)
+	import os, sys
+	config_file = './config.log'
+	f = open(config_file, 'w')
+	old_stdout = sys.stdout
+	sys.stdout = f
+	okay = False
+	try:
+		# Do some very simple sanity checking on tools. Prove that we have a compiler
+		# that's able to deal with C++ 11 constructs (typically, g++ 4.6 or later).
+		config = Configure(env)
+		if not config.CheckCXX():
+			print('C++ compiler unavailable.')
+			Exit(1)
 
-autoconf()		
+		# Check to see if we can see some headers that we're likely to need. This
+		# check can be representative rather than exhaustive, because the bar for
+		# portability is modest (we're only going to be building this at Adaptive,
+		# on relatively similar systems).
+		required_headers = ['string', 'utility', 'vector', 'memory', 'climits',
+			'atomic', 'mutex', 'thread', 'unordered_map', 'cstdint']
+		missing = []
+		for rh in required_headers:
+			if not config.CheckHeader(rh, language='C++'):
+				missing.append(rh)
+		if missing:
+			print('The following headers are unavailable, but required to compile: %s' % ', '.join(['<%s>' % h for h in missing]))
+			Exit(1)
+		okay = True
+	finally:
+		f.close()
+		sys.stdout = old_stdout
+		if okay:
+			print('Config checks passed.')
+		else:
+			f = open(config_file, 'r')
+			txt = f.read()
+			f.close()
+			print(txt)
+
+autoconf()
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 
