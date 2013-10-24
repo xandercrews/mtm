@@ -52,49 +52,14 @@ env['LIB_OUTPUT'] = '#/mybuilddir/mybuildmode/lib'
 env.SConscript('whateverpath/gmock/scons/SConscript')
 # -- cut here --
 
-If on the other hand you place the Google Mock sources in a directory
-outside of your project's source tree, you would use a snippet similar
-to the following:
-
-# -- cut here --
-
-# The following assumes that $BUILD_DIR refers to the root of the
-# directory for your current build mode, e.g. "#/mybuilddir/mybuildmode"
-
-# Build gmock library; as it is outside of our source root, we need to
-# tell SCons that the directory it will refer to as
-# e.g. $BUILD_DIR/gmock is actually on disk in original form as
-# ../../gmock (relative to your project root directory).  Recall that
-# SCons by default copies all source files into the build directory
-# before building.
-gmock_dir = env.Dir('$BUILD_DIR/gmock')
-
-# Modify this part to point to Google Mock relative to the current
-# SConscript or SConstruct file's directory.  The ../.. path would
-# be different per project, to locate the base directory for Google Mock.
-gmock_dir.addRepository(env.Dir('../../gmock'))
-
-# Tell the Google Mock SCons file where to copy executables.
-env['EXE_OUTPUT'] = '$BUILD_DIR'  # example, optional
-
-# Call the Google Mock SConscript to build gmock.lib and unit tests.  The
-# location of the library should end up as
-# '$BUILD_DIR/gmock/scons/gmock.lib'
-env.SConscript(env.File('scons/SConscript', gmock_dir))
-
-# -- cut here --
 """
-
-
-__author__ = 'joi@google.com (Joi Sigurdsson)'
-
 
 import os
 
 ############################################################
 # Environments for building the targets, sorted by name.
 
-Import('env', 'gtest_exports')
+Import('env')
 
 GTEST_DIR = env['GTEST_DIR']
 
