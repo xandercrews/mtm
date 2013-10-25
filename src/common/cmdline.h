@@ -45,18 +45,18 @@ public:
 	 * Look for an option with the specified name. If found, return its value.
 	 * If not, return NULL.
 	 *
-	 * @param option_name
+	 * @param full_option_name
 	 *     Always use the long form. Short-form equivalents are checked automatically.
 	 */
 
-	Option * get_option(char const * option_name) const;
+	char const * get_option(char const * full_option_name) const;
 	/**
 	 * Return true if a flag is present.
 	 *
 	 * @param flag_name
 	 *     Always use the long form. Short-form equivalents are checked automatically.
 	 */
-	bool has_flag(char const * flag_name) const;
+	bool has_flag(char const * full_flag_name) const;
 
 	/**
 	 * @return true if we should display help, either because we have errors or because

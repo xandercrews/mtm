@@ -57,8 +57,14 @@ struct Cmdline::Data {
 
 	inline void parse(int argc, char const ** argv) {
 		program_name = argc > 0 ? argv[0] : "mtm";
+		auto arg = strrchr(program_name, '/');
+		// As long as the program_name doesn't end in a slash, trim
+		// off the path portion.
+		if (arg && arg[1]) {
+			program_name = arg+1;
+		}
 		for (auto i = 1; i < argc; ++i) {
-			auto arg = argv[i];
+			arg = argv[i];
 			if (is_flag(arg)) {
 				flags.push_back(arg);
 			} else if (is_option(arg)) {
@@ -104,6 +110,17 @@ bool Cmdline::has_flag(char const * full_name) const {
 
 Cmdline::Options const & Cmdline::get_options() const {
 	return data->options;
+}
+
+char const * Cmdline::get_option(char const * full_option_name) const {
+	if (full_option_name && *full_option_name == '-') {
+		for (auto Option : data->options) {
+			if (matches_switch(Option.first, full_option_name)) {
+				return Option.second;
+			}
+		}
+	}
+	return NULL;
 }
 
 Cmdline::Strings const & Cmdline::get_positional_args() const {
