@@ -1,12 +1,5 @@
-/*
- * engine.h
- *
- *  Created on: Oct 24, 2013
- *      Author: dhardman
- */
-
-#ifndef ENGINE_H_
-#define ENGINE_H_
+#ifndef MTM_COMMON_ENGINE_H_
+#define MTM_COMMON_ENGINE_H_
 
 namespace mtm {
 
@@ -22,4 +15,4 @@ public:
 
 } /* namespace mtm */
 
-#endif /* ENGINE_H_ */
+#endif /* MTM_COMMON_ENGINE_H_ */

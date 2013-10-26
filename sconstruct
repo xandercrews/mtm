@@ -14,9 +14,9 @@ if not GetOption('verbose'):
     env['LINKCOMSTR'] = "Linking $TARGET ..."
 
 if GetOption('release'):
-	env['CCFLAGS'] = '-O3'
+	env['CCFLAGS'] = '-O3 -D_FILE_OFFSET_BITS=64'
 else:
-	env['CCFLAGS'] = '-g'
+	env['CCFLAGS'] = '-g -D_FILE_OFFSET_BITS=64'
 
 # Make sure all other scripts can use the Environments we've built.
 Export('env')

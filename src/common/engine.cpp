@@ -5,6 +5,8 @@
  *      Author: dhardman
  */
 
+#include <stdexcept>
+
 #include "engine.h"
 
 namespace mtm {
@@ -32,11 +34,15 @@ int Engine::run() {
 	initialize(); // prove we can communicate
 	start_listening();
 	while (more_files) {
-		Batch batch(file);
-		Chunk = get_chunk();
-		chunk.prioritize();
-		chunk.find_eligible_jobs();
-		chunk.distribute();
+		try {
+			Batch batch(file);
+			Chunk = get_chunk();
+			chunk.prioritize();
+			chunk.find_eligible_jobs();
+			chunk.distribute();
+		} catch (std::runtime_error const & e) {
+
+		}
 	}
 #endif
 }

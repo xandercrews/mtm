@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "common/cmdline.h"
-#include "common/interpolate.h"
+#include "common/interp.h"
 
 namespace mtm {
 
@@ -69,13 +69,13 @@ struct Cmdline::Data {
 				flags.push_back(arg);
 			} else if (is_option(arg)) {
 				if (i >= argc - 1) {
-					add_error(interpolate("Expected %1 to be followed by a value.", arg));
+					add_error(interp("Expected %1 to be followed by a value.", arg));
 				} else {
 					auto value = argv[++i];
 					if (matches_switch(arg, "--port")) {
 						auto n = atoi(value);
 						if (n < 1024 || n > 65536) {
-							add_error(interpolate("Expected numeric port value > 1024 and < 65536 after %1{arg} -- not %2{value}.", arg, value));
+							add_error(interp("Expected numeric port value > 1024 and < 65536 after %1{arg} -- not %2{value}.", arg, value));
 						}
 					}
 					options.push_back(Option(arg, argv[++i]));
@@ -144,7 +144,7 @@ char const * Cmdline::get_program_name() const {
 }
 
 std::string Cmdline::get_help() const {
-	return interpolate(
+	return interp(
 			"%1{errors}\n%2{progname} -- run a batch of similar jobs at high speed\n"
 			"\n"
 			"  Syntax: %2{progname} [flags] [options] [batch file(s)]\n"
