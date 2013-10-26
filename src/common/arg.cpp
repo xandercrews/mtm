@@ -34,7 +34,7 @@ Arg::Arg(uint16_t value) : arg_type(atInt), int_value(value) {
 Arg::Arg(uint8_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(double value) : arg_type(atInt), double_value(value) {
+Arg::Arg(double value) : arg_type(atDouble), double_value(value) {
 }
 
 Arg::Arg(char const * value) : arg_type(atCharPtr), ptr_value(value) {
@@ -53,10 +53,10 @@ Arg::Arg(ArgCompatible const & value) : arg_type(atCompatible),
 
 std::string Arg::to_string(char const * format) const {
 	std::string txt;
-	return append(txt);
+	return append_to(txt);
 }
 
-std::string & Arg::append(std::string & txt, char const * format) const {
+std::string & Arg::append_to(std::string & txt, char const * format) const {
 	switch (arg_type) {
 	case atUInt:
 		{

@@ -108,7 +108,7 @@ std::string & interp_into(std::string & txt, char const * format,
 				char fmtspec_buf[FMTSPEC_BUF_LEN];
 				// Go look for it. This call also adjusts p as needed.
 				char const * fmtspec = get_fmt_spec(p + 2, fmtspec_buf, p);
-				arg->append(txt, fmtspec);
+				arg->append_to(txt, fmtspec);
 
 			} else {
 				txt += c;

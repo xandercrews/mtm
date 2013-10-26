@@ -80,7 +80,7 @@ public:
 	std::string to_string(char const * format = NULL) const;
 
 	// Called by interp() to add to string we're building.
-	std::string & append(std::string & txt, char const * format = NULL) const;
+	std::string & append_to(std::string & txt, char const * format = NULL) const;
 	
 	// The placeholder arg.
 	static Arg const & Empty;

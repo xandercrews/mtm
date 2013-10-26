@@ -1,11 +1,14 @@
 #include <map>
+#include <errno.h>
 
 #include "gtest/gtest.h"
 #include "common/event.h"
 #include "common/interp.h"
+#include "test/test_util.h"
 
 using namespace std;
 using namespace mtm;
+using namespace mtm::event;
 
 TEST(EventTest, no_dups) {
 	typedef std::map<int, char const *> Map;
@@ -13,8 +16,8 @@ TEST(EventTest, no_dups) {
 	size_t total = event::get_item_count();
 	for (size_t i = 0; i < total; ++i) {
 		event::EID id = event::get_item_id(i);
-		auto number = event::get_number(id);
-		auto name = event::get_name(id);
+		auto number = event::get_nonunique_number(id);
+		auto name = event::get_symbolic_name(id);
 		if (names_by_number.find(number) == names_by_number.end()) {
 			names_by_number[number] = name;
 		} else {
@@ -29,7 +32,7 @@ TEST(EventTest, valid_names_and_argrefs) {
 	for (size_t i = 0; i < total; ++i) {
 
 		event::EID id = event::get_item_id(i);
-		auto name = event::get_name(id);
+		auto name = event::get_symbolic_name(id);
 		for (auto p = name; *p; ++p) {
 			if (toupper(*p) != *p) {
 				ADD_FAILURE() << name << " is not upper-case.";
@@ -151,4 +154,49 @@ TEST(EventTest, valid_names_and_argrefs) {
 			}
 		}
 	}
+}
+
+TEST(EventTest, known_event_properties) {
+	auto e = MTM_FUNC_NOT_IMPLEMENTED;
+	EXPECT_STREQ("MTM_FUNC_NOT_IMPLEMENTED", get_symbolic_name(e));
+	EXPECT_EQ(sevERROR, get_severity(e));
+	EXPECT_EQ(kcMTM, get_component(e));
+	EXPECT_EQ(escINTERNAL, get_escalation(e));
+	EXPECT_EQ(1, get_nonunique_number(e));
+	EXPECT_STREQ("domain.mtm.general", get_topic(e));
+	expect_str_contains(get_msg(e), "not yet been implemented");
+	expect_str_contains(get_comments(e), "stubbed");
+}
+
+EID get_foreign_event_id() {
+	return static_cast<EID>(
+			static_cast<int>(sevWARNING) << 28
+			| static_cast<int>(kcMWM) << 16
+			| static_cast<int>(escPOWERUSER) << 14
+			| 1234
+			);
+}
+
+TEST(EventTest, unknown_event_properties) {
+	auto e = get_foreign_event_id();
+	EXPECT_STREQ("", get_symbolic_name(e));
+	EXPECT_EQ(sevWARNING, get_severity(e));
+	EXPECT_EQ(kcMWM, get_component(e));
+	EXPECT_EQ(escPOWERUSER, get_escalation(e));
+	EXPECT_EQ(1234, get_nonunique_number(e));
+	EXPECT_STREQ("", get_topic(e));
+	EXPECT_STREQ("", get_msg(e));
+	EXPECT_STREQ("", get_comments(e));
+}
+
+TEST(EventTest, posix_properties) {
+	auto e = ENOENT;
+	EXPECT_STREQ("", get_symbolic_name(e));
+	EXPECT_EQ(sevERROR, get_severity(e));
+	EXPECT_EQ(kcPOSIX, get_component(e));
+	EXPECT_EQ(escADMIN, get_escalation(e));
+	EXPECT_EQ(2, get_nonunique_number(e));
+	EXPECT_STREQ("", get_topic(e));
+	expect_str_contains(get_msg(e).c_str(), "such file or directory");
+	EXPECT_STREQ("", get_comments(e));
 }
