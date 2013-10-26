@@ -62,6 +62,7 @@ struct Batch::Data {
 	const size_t gulp_size;
 	char * buf;
 	size_t buf_offset;
+	size_t buf_filled_count;
 	size_t gulp_count;
 
 	Data(char const * _fname, size_t gulp_size) :
@@ -71,7 +72,7 @@ struct Batch::Data {
 						TESTING_GULP_SIZE :
 						max(MIN_GULP_SIZE, min(MAX_GULP_SIZE, gulp_size))) :
 				MAX_GULP_SIZE),
-		buf(NULL), buf_offset(0), gulp_count(0) {
+		buf(NULL), buf_offset(0), buf_filled_count(0), gulp_count(0) {
 
 		f = fopen(_fname, "r");
 		if (f) {
@@ -81,18 +82,26 @@ struct Batch::Data {
 				fseek(f, 0, SEEK_SET);
 				gulp();
 			} else {
-				fclose(f);
-				f = NULL;
+				cleanup();
+				throw MTM_ERROR(MTM_1FILE_EMPTY, _fname);
 			}
+		} else {
+			throw MTM_ERROR(MTM_1FILE_UNREADABLE, _fname);
 		}
 	}
 
 	~Data() {
+		cleanup();
+	}
+
+	void cleanup() {
 		if (f) {
 			fclose(f);
+			f = NULL;
 		}
 		if (buf) {
 			delete[] buf;
+			buf = NULL;
 		}
 	}
 
@@ -123,6 +132,19 @@ struct Batch::Data {
 		uint64_t intended_bytes_read = min(bytes_remaining, gulp_size - 1);
 		uint64_t bytes_read = fread(buf, 1, intended_bytes_read, f);
 
+		// Check for binary file on first gulp.
+		if (gulp_count == 1) {
+			if (data_seems_binary(buf, buf + min(bytes_read,
+					static_cast<uint64_t>(100)))) {
+				cleanup();
+				throw MTM_ERROR(MTM_1FILE_BAD_SEEMS_BINARY, fname);
+			}
+		}
+
+		// Reset buffer state variables.
+		buf_offset = 0;
+		buf_filled_count = bytes_read;
+
 		// Make sure our buffer is null-terminated. At the time we call this,
 		// buf + bytes_read is guaranteed to be a valid location for us to
 		// write (it's not past the end of our buf buffer). We may write our
@@ -140,15 +162,12 @@ struct Batch::Data {
 		// if someone gives us malformed input, we don't want to seg fault.
 		// Throw an exception instead.
 		if (end == buf) { // file's not exhausted, full buffer had 0 LF
+			cleanup();
 			throw MTM_ERROR(MTM_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
 		}
 
+		// Guarantee null termination.
 		*end = 0;
-		if (gulp_count == 1) {
-			if (data_seems_binary(buf, end)) {
-				throw MTM_ERROR(MTM_1FILE_BAD_SEEMS_BINARY);
-			}
-		}
 
 		// Reset file cursor to offset of our null char, so our next read picks
 		// up on a line boundary.
@@ -159,7 +178,9 @@ struct Batch::Data {
 			}
 		} else {
 			// Close file handle immediately rather than keeping it open
-			// while we process the final lines of the batch.
+			// while we process the final lines of the batch. This is not
+			// the same as calling cleanup() -- we still want the data that's
+			// in buf...
 			fclose(f);
 			f = NULL;
 		}
@@ -167,15 +188,79 @@ struct Batch::Data {
 	}
 };
 
+inline char * start_of_next_line(char * buf) {
+	while (true) {
+		auto c = *buf;
+		switch (c) {
+		case 0:
+			return 0;
+		case '\n':
+		case '\r':
+		case '\t':
+		case ' ':
+			++buf;
+			break;
+		case '#':
+			if (auto p = strpbrk(buf, "\n\r")) {
+				buf = p + 1;
+				break;
+			} else {
+				return 0;
+			}
+		default:
+			return buf;
+		}
+	}
+}
+
+inline void rtrim_line(char * end) {
+	// We start with the first char beyond current line (which may be the final
+	// terminating null). We back up *before* we test the char value, not after.
+	do { --end; } while (isspace(*end));
+	// It's impossible for us to underflow, because we know that start pointed
+	// at something valid. So it's safe to write a null.
+	end[1] = 0;
+}
+
 char const * Batch::next_line() {
+	if (data->buf) {
+
+		auto end_of_current_gulp = data->buf + data->buf_filled_count;
+		auto start = data->buf + data->buf_offset;
+
+		// Skip over previous null terminator, if applicable.
+		if (start < end_of_current_gulp && *start == 0) {
+			++start;
+		}
+
+		while (true) {
+			auto ltrim = start_of_next_line(start);
+			if (start && start < end_of_current_gulp && ltrim) {
+				auto end = strpbrk(ltrim, "\n\r");
+				// No more line breaks?
+				if (end == NULL) {
+					end = strchr(ltrim, 0);
+				}
+				rtrim_line(end);
+				data->buf_offset = end - data->buf;
+				return ltrim;
+			} else {
+				if (!data->gulp()) {
+					return NULL;
+				}
+				end_of_current_gulp = data->buf + data->buf_filled_count;
+			}
+		}
+	}
 	return NULL;
 }
 
 double Batch::ratio_complete() const {
-	if (data->flen == 0) {
+	if (data->flen == 0 || data->buf == NULL) {
 		return 1.0;
 	}
-	return data->foffset / static_cast<double>(data->flen);
+	return (data->foffset - data->buf_filled_count + data->buf_offset) /
+			static_cast<double>(data->flen);
 }
 
 Batch::Batch(char const * fname, size_t gulp_size) : data(0) {
@@ -193,12 +278,14 @@ Batch::~Batch() {
 bool data_seems_binary(char const * begin, char const * end) {
 	for (char const * p = begin; p < end; ++p) {
 		char c = *p;
-		if (c < ' ' || c == 127) {
+		if (c == 127) return true;
+		if (c < ' ') {
 			if (c != '\t' && c != '\n' && c != '\r') {
 				return true;
 			}
 		}
 	}
+	return false;
 }
 
 char * last_line_break(char * p, char const * begin) {

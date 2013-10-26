@@ -166,6 +166,12 @@ TEST(EventTest, known_event_properties) {
 	EXPECT_STREQ("domain.mtm.general", get_topic(e));
 	expect_str_contains(get_msg(e), "not yet been implemented");
 	expect_str_contains(get_comments(e), "stubbed");
+	EXPECT_EQ(0, get_arg_count(e));
+}
+
+TEST(EventTest, multi_arg_count) {
+	auto e = MTM_1FILE_BAD_HUGE_LINE_2BYTES;
+	EXPECT_EQ(2, get_arg_count(e));
 }
 
 EID get_foreign_event_id() {
@@ -187,6 +193,7 @@ TEST(EventTest, unknown_event_properties) {
 	EXPECT_STREQ("", get_topic(e));
 	EXPECT_STREQ("", get_msg(e));
 	EXPECT_STREQ("", get_comments(e));
+	EXPECT_EQ(0, get_arg_count(e));
 }
 
 TEST(EventTest, posix_properties) {
@@ -199,4 +206,5 @@ TEST(EventTest, posix_properties) {
 	EXPECT_STREQ("", get_topic(e));
 	expect_str_contains(get_msg(e).c_str(), "such file or directory");
 	EXPECT_STREQ("", get_comments(e));
+	EXPECT_EQ(0, get_arg_count(e));
 }

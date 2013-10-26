@@ -28,12 +28,23 @@ EVENT(MTM_1FILE_BAD_HUGE_LINE_2BYTES, sevERROR, escUSER, 2,
 
 EVENT(MTM_BAD_FNAME_NULL_OR_EMPTY, sevERROR, escINTERNAL, 3,
 		"domain.mtm.input",
-		"Batch cannot be built with null or empty filename.",
+		"Batch cannot accept null or empty filename.",
 		"")
 
 EVENT(MTM_1FILE_BAD_SEEMS_BINARY, sevERROR, escUSER, 4,
 		"domain.mtm.input",
 		"Input file %1{fname} seems to be binary. The batch must be abandoned.",
+		"")
+
+EVENT(MTM_1FILE_UNREADABLE, sevERROR, escUSER, 5,
+		"domain.mtm.input",
+		"Input file %1{fname} is unavailable or unreadable. Check permissions"
+		" and file name.",
+		"")
+
+EVENT(MTM_1FILE_EMPTY, sevERROR, escUSER, 6,
+		"domain.mtm.input",
+		"Input file %1{fname} is empty.",
 		"")
 
 #undef EVENT

@@ -13,6 +13,9 @@ namespace mtm {
 static std::string make_msg(int eid, char const * source_fname,
 		char const * source_func, unsigned source_line, MANY_ARGS_IMPL) {
 
+	Arg const * args[] = {&arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7,
+			&arg8, &arg9};
+
 	if (!source_fname || !*source_fname) {
 		source_fname = "unknown file";
 	}
@@ -21,8 +24,30 @@ static std::string make_msg(int eid, char const * source_fname,
 		source_func = "unknown function";
 	}
 
-	Arg const * args[] = {&arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7,
-			&arg8, &arg9};
+#ifdef _DEBUG
+	int arg_count = get_arg_count(eid);
+	int missing_count = 0;
+	int extra_count = 0;
+	for (int i = 0; i < 9; ++i) {
+		if (i < arg_count) {
+			if (args[i] == &Arg::Empty) {
+				++missing_count;
+			}
+		} else if (args[i] != &Arg::Empty) {
+			++extra_count;
+		}
+	}
+	if (missing_count || extra_count) {
+		string name = get_symbolic_name(eid);
+		if (!name.empty()) {
+			name += " ";
+		}
+		name += interp("%1 (0x%1{%08X})", eid);
+		fprintf(stderr, "Bad call to render %s at %s, %s(), line %d; %d missing"
+				" args, %d extra args.\n", name.c_str(), source_fname,
+				source_func, source_line, missing, extra);
+	}
+#endif
 
 	bool posix = event::get_component(eid) == kcPOSIX;
 	bool interp_args = !posix;

@@ -15,24 +15,33 @@ using namespace mtm;
 using namespace mtm::event;
 
 TEST(BatchTest, nonexistent_file) {
-	Batch b("doesn't@exist");
-	ASSERT_EQ(NULL, b.next_line());
-	ASSERT_DOUBLE_EQ(1.0, b.ratio_complete());
+	try {
+		Batch b("doesn't@exist");
+		ADD_FAILURE() << "Expected error about unavailable file.";
+	} catch (Error const & e) {
+		ASSERT_EQ(e.get_event_id(), MTM_1FILE_UNREADABLE);
+	}
 }
 
-TEST(BatchTest, binary_file) {
-#if 0
+TEST(BatchTest, readable_binary_file) {
 	try {
-		Batch b("proc/self/exe");
+		Batch b("/usr/bin/ls");
 		ADD_FAILURE() << "Expected error about binary file.";
 	} catch (Error const & e) {
 		ASSERT_EQ(e.get_event_id(), MTM_1FILE_BAD_SEEMS_BINARY);
 	}
-#endif
+}
+
+TEST(BatchTest, empty_existing_file) {
+	try {
+		Batch b("/tmp/");
+		ADD_FAILURE() << "Expected error about unreadable file.";
+	} catch (Error const & e) {
+		ASSERT_EQ(e.get_event_id(), MTM_1FILE_EMPTY);
+	}
 }
 
 TEST(BatchTest, text_file) {
-#if 0
 	// First, create a temporary txt file.
 	char buf[512];
 	strcpy(buf, "/tmp/batch_test_XXXXXX");
@@ -86,5 +95,4 @@ TEST(BatchTest, text_file) {
 		ASSERT_STREQ(LINE, line);
 	}
 	ASSERT_STREQ(NULL, b.next_line());
-#endif
 }

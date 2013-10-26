@@ -172,6 +172,11 @@ std::string get_std_id_repr(int eid);
 size_t get_std_id_repr(int eid, char * buf, size_t buflen);
 const size_t MIN_STD_ID_REPR = 11;
 
+/**
+ * How many args should be used with this event?
+ */
+int get_arg_count(int eid);
+
 } // end event namespace
 } // end namespace mtm
 
