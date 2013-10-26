@@ -93,7 +93,7 @@ EID get_item_id(size_t i) {
 	return (i < ITEM_COUNT) ? ITEMS[i].id : static_cast<EID>(0);
 }
 
-inline size_t get_count() {
+size_t get_item_count() {
 	return ITEM_COUNT;
 }
 

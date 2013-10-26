@@ -17,6 +17,7 @@ namespace mtm {
  */
 class Error: public std::runtime_error {
 public:
+	virtual ~Error();
 	/**
 	 * Create an error with an event, plus an arbitrary number of args of any
 	 * data type.
@@ -31,7 +32,13 @@ public:
 	// functions, because it keeps code cleaner. Exceptions are by definition
 	// exceptional--they are not a "common case" that we have to make fast.
 
-	virtual ~Error();
+	/**
+	 * Let code lookup information about the error.
+	 */
+	EID get_event_id() const;
+
+private:
+	EID event_id;
 };
 
 

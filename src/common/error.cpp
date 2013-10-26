@@ -38,10 +38,15 @@ static std::string make_msg(EID error, char const * source_fname,
 
 Error::Error(EID error, char const * source_fname, int source_line,
 		MANY_ARGS_IMPL):
-	runtime_error(make_msg(error, source_fname, source_line, MANY_ARGS_LIST)) {
+	runtime_error(make_msg(error, source_fname, source_line, MANY_ARGS_LIST)),
+	event_id(error) {
 }
 
 Error::~Error() {
+}
+
+EID Error::get_event_id() const {
+	return event_id;
 }
 
 } /* namespace mtm */

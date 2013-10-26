@@ -46,9 +46,9 @@ if not config.CheckCXX():
 # Check to see if we can see some headers that we're likely to need. This
 # check can be representative rather than exhaustive, because the bar for
 # portability is modest (we're only going to be building this at Adaptive,
-# on relatively similar systems).
-required_headers = ['string', 'utility', 'vector', 'memory', 'climits',
-	'atomic', 'mutex', 'thread', 'unordered_map', 'cstdint']
+# on relatively similar systems). I've picked a couple that virtually guarantee
+# the presence of more common ones.
+required_headers = ['unordered_map', 'cstdint']
 missing = []
 for rh in required_headers:
 	if not config.CheckHeader(rh, language='C++'):

@@ -23,10 +23,17 @@ EVENT(MTM_1FILE_BAD_HUGE_LINE_2BYTES, ERROR, USER, 2,
 		"domain.mtm.input",
 		"Input file %1{fname} is malformed because it contains a single line of"
 		" text that's at least %2{bytes_read} bytes long. The batch must be"
-		" abandoned.", "")
+		" abandoned.",
+		"")
 
-EVENT(MTM_BAD_FNAME_NULL_OR_EMPTY, ERROR, INTERNAL, 1,
+EVENT(MTM_BAD_FNAME_NULL_OR_EMPTY, ERROR, INTERNAL, 3,
 		"domain.mtm.input",
-		"Batch cannot be built with null or empty filename.", "")
+		"Batch cannot be built with null or empty filename.",
+		"")
+
+EVENT(MTM_1FILE_BAD_SEEMS_BINARY, ERROR, USER, 4,
+		"domain.mtm.input",
+		"Input file %1{fname} seems to be binary. The batch must be abandoned.",
+		"")
 
 #undef EVENT

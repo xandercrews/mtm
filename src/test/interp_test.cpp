@@ -25,4 +25,5 @@ TEST(InterpTest, one_valid_argref) {
   EXPECT_EQ("hello 2", interp("hello %1", 2));
   EXPECT_EQ("hello 2 world", interp("hello %1 world", 2));
   EXPECT_EQ("hello cruel world", interp("hello %1{adjective} world", "cruel"));
+  EXPECT_EQ("hello cruel2 world", interp("hello %12 world", "cruel"));
 }

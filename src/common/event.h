@@ -109,7 +109,7 @@ EID get_item_id(size_t i);
 /**
  * How many events are defined, so we can iterate across them?
  */
-size_t get_count();
+size_t get_item_count();
 
 } // end event namespace
 } // end namespace mtm

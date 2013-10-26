@@ -47,15 +47,8 @@ const size_t MIN_GULP_SIZE = 64 * 1024;
 // having to use massive amounts of RAM and do lots of I/O.
 const size_t TESTING_GULP_SIZE = 40;
 
-
-inline char * last_line_break(char * p, char const * begin) {
-	do {
-		if (*p == '\n') {
-			return p;
-		}
-	} while (--p > begin);
-	return p;
-}
+static char * last_line_break(char * p, char const * begin);
+static bool data_seems_binary(char const * begin, char const * end);
 
 struct Batch::Data {
 
@@ -69,6 +62,7 @@ struct Batch::Data {
 	const size_t gulp_size;
 	char * buf;
 	size_t buf_offset;
+	size_t gulp_count;
 
 	Data(char const * _fname, size_t gulp_size) :
 		fname(_fname), f(NULL),	flen(0), foffset(0),
@@ -77,7 +71,7 @@ struct Batch::Data {
 						TESTING_GULP_SIZE :
 						max(MIN_GULP_SIZE, min(MAX_GULP_SIZE, gulp_size))) :
 				MAX_GULP_SIZE),
-		buf(NULL), buf_offset(0) {
+		buf(NULL), buf_offset(0), gulp_count(0) {
 
 		f = fopen(_fname, "r");
 		if (f) {
@@ -110,6 +104,7 @@ struct Batch::Data {
 		if (f == NULL) {
 			return false;
 		}
+		++gulp_count;
 
 		// Make sure we have a buffer to hold what we're going to read.
 		if (buf == NULL) {
@@ -149,9 +144,10 @@ struct Batch::Data {
 		}
 
 		*end = 0;
-		// Handle CRLF as well as just LF.
-		if (end > buf && end[1] == '\r') {
-			end[-1] = 0;
+		if (gulp_count == 1) {
+			if (data_seems_binary(buf, end)) {
+				throw MTM_ERROR(MTM_1FILE_BAD_SEEMS_BINARY);
+			}
 		}
 
 		// Reset file cursor to offset of our null char, so our next read picks
@@ -192,6 +188,26 @@ Batch::Batch(char const * fname, size_t gulp_size) : data(0) {
 
 Batch::~Batch() {
 	delete data;
+}
+
+bool data_seems_binary(char const * begin, char const * end) {
+	for (char const * p = begin; p < end; ++p) {
+		char c = *p;
+		if (c < ' ' || c == 127) {
+			if (c != '\t' && c != '\n' && c != '\r') {
+				return true;
+			}
+		}
+	}
+}
+
+char * last_line_break(char * p, char const * begin) {
+	do {
+		if (*p == '\n') {
+			return p;
+		}
+	} while (--p > begin);
+	return p;
 }
 
 } /* namespace mtm */
