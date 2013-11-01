@@ -26,7 +26,7 @@ common = SConscript('src/common/sconscript', variant_dir='build/common', duplica
 Export('common')
 
 # Build the main binary, both release and debug.
-binary = SConscript('src/mtm/sconscript', variant_dir='build/mtm', duplicate=0)
+binary = SConscript('src/nitro/sconscript', variant_dir='build/nitro', duplicate=0)
 Default(binary)
 
 # Build tests, both release and debug.

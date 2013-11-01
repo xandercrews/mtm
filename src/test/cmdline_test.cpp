@@ -8,7 +8,7 @@
 #include "common/cmdline.h"
 #include "gtest/gtest.h"
 
-using namespace mtm;
+using namespace nitro;
 
 TEST(CmdlineTest, invalid_ctor_with_no_args) {
 	Cmdline x(0, 0);

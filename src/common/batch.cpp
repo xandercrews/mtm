@@ -18,7 +18,7 @@ using std::max;
 #include "common/error.h"
 #include "common/event.h"
 
-namespace mtm {
+namespace nitro {
 
 /**
  * How much will we read from a batch file at any given time?
@@ -83,10 +83,10 @@ struct Batch::Data {
 				gulp();
 			} else {
 				cleanup();
-				throw MTM_ERROR(MTM_1FILE_EMPTY, _fname);
+				throw NITRO_ERROR(NITRO_1FILE_EMPTY, _fname);
 			}
 		} else {
-			throw MTM_ERROR(MTM_1FILE_UNREADABLE, _fname);
+			throw NITRO_ERROR(NITRO_1FILE_UNREADABLE, _fname);
 		}
 	}
 
@@ -137,7 +137,7 @@ struct Batch::Data {
 			if (data_seems_binary(buf, buf + min(bytes_read,
 					static_cast<uint64_t>(100)))) {
 				cleanup();
-				throw MTM_ERROR(MTM_1FILE_BAD_SEEMS_BINARY, fname);
+				throw NITRO_ERROR(NITRO_1FILE_BAD_SEEMS_BINARY, fname);
 			}
 		}
 
@@ -163,7 +163,7 @@ struct Batch::Data {
 		// Throw an exception instead.
 		if (end == buf) { // file's not exhausted, full buffer had 0 LF
 			cleanup();
-			throw MTM_ERROR(MTM_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
+			throw NITRO_ERROR(NITRO_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
 		}
 
 		// Guarantee null termination.
@@ -267,7 +267,7 @@ Batch::Batch(char const * fname, size_t gulp_size) : data(0) {
 	if (fname && *fname) {
 		data = new Data(fname, gulp_size);
 	} else {
-		throw MTM_ERROR(MTM_BAD_FNAME_NULL_OR_EMPTY);
+		throw NITRO_ERROR(NITRO_BAD_FNAME_NULL_OR_EMPTY);
 	}
 }
 

@@ -4,11 +4,10 @@
 #include "common/error.h"
 #include "test/test_util.h"
 
-using namespace mtm;
-using namespace mtm::event;
+using namespace nitro;
 
 TEST(ErrorTest, simple) {
-	auto n = __LINE__; auto e = MTM_ERROR(MTM_FUNC_NOT_IMPLEMENTED);
+	auto n = __LINE__; auto e = NITRO_ERROR(NITRO_FUNC_NOT_IMPLEMENTED);
 	auto msg = e.what();
 	expect_str_contains(msg, __FILE__);
 	expect_str_contains(msg, __func__);
@@ -36,6 +35,6 @@ TEST(ErrorTest, posix_ctor) {
 
 TEST(ErrorTest, null_fname_and_func) {
 	// These two lines should not crash.
-	auto e = Error(MTM_FUNC_NOT_IMPLEMENTED, NULL, NULL, 3);
+	auto e = Error(NITRO_FUNC_NOT_IMPLEMENTED, NULL, NULL, 3);
 	e.what();
 }

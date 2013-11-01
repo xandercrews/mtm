@@ -1,20 +1,20 @@
-/*
- * batch.h
- *
- *  Created on: Oct 25, 2013
- *      Author: dhardman
- */
-
-#ifndef BATCH_H_
-#define BATCH_H_
+#ifndef _NITRO_COMMON_BATCH_H_
+#define _NITRO_COMMON_BATCH_H_
 
 #include <cstring> // for size_t
 
-namespace mtm {
+namespace nitro {
 
 /**
  * Manage a single file of commands. Iterate over them in a way that's
  * transparent to file buffering issues.
+ *
+ * @note This class is NOT threadsafe. That doesn't mean you can't use a single
+ *     instance of Batch from multiple threads--it just means that if you do
+ *     it, you have to mutex, because the Batch class won't do it for you. In
+ *     this respect, the class's guarantees are identical to those of stl
+ *     containers or std::string. The {@link Queue} class is an example of a
+ *     consumer of Batch that does mutexing correctly.
  */
 class Batch {
 	struct Data;
@@ -53,6 +53,6 @@ public:
 	double ratio_complete() const;
 };
 
-} /* namespace mtm */
+} /* namespace nitro */
 
 #endif /* BATCH_H_ */

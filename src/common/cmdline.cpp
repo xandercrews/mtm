@@ -10,7 +10,7 @@
 #include "common/cmdline.h"
 #include "common/interp.h"
 
-namespace mtm {
+namespace nitro {
 
 inline bool in_alternatives_str(char const * item, char const * alternatives) {
 	auto substr = strstr(alternatives, item);
@@ -56,7 +56,7 @@ struct Cmdline::Data {
 	}
 
 	inline void parse(int argc, char const ** argv) {
-		program_name = argc > 0 ? argv[0] : "mtm";
+		program_name = argc > 0 ? argv[0] : "nitro";
 		auto arg = strrchr(program_name, '/');
 		// As long as the program_name doesn't end in a slash, trim
 		// off the path portion.
@@ -86,8 +86,6 @@ struct Cmdline::Data {
 		}
 	}
 };
-
-
 
 Cmdline::Cmdline(int argc, char const ** argv) : data(new Data) {
 	data->parse(argc, argv);

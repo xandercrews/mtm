@@ -3,7 +3,7 @@
 #include "common/cmdline.h"
 #include "common/engine.h"
 
-using namespace mtm;
+using namespace nitro;
 
 int main(int argc, char ** argv) {
 

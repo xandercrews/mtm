@@ -8,8 +8,7 @@
 
 #include "common/event.h"
 
-namespace mtm {
-namespace event {
+namespace nitro {
 
 struct EventData {
 	EID id;
@@ -24,7 +23,7 @@ struct EventData {
 
 EventData const ITEMS[] = {
 	#define EVENT(name, severity, escalation, number, topic, msg, comments) \
-	{ name, #name, severity, escalation, number, topic, msg, comments },
+	{ name, #name, sev##severity, esc##escalation, number, topic, msg, comments },
 	#include "common/event_tuples.h"
 };
 
@@ -178,6 +177,5 @@ int get_arg_count(int eid) {
 	return arg_count;
 }
 
-} // end event namespace
-} // end mtm namespace
+} // end namespace nitro
 

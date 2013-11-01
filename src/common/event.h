@@ -1,19 +1,18 @@
+#ifndef _NITRO_COMMON_EVENT_H_
+#define _NITRO_COMMON_EVENT_H_
+
 /**
- *  Integrates MTM with Adaptive's event dictionary. See the following wiki
+ *  Integrates Nitro with Adaptive's event dictionary. See the following wiki
  *  page: https://wiki.adaptivecomputing.com:8443/display/ENG/Event+Dictionary
  */
 
-#ifndef MTM_COMMON_EVENT_H_
-#define MTM_COMMON_EVENT_H_
-
-namespace mtm {
+namespace nitro {
 
 /**
  * In java, which has rich enums, we'd make this an enum class. In C++, we can
  * make it either a class with static methods, or a namespace. I went with
  * namespace, since we don't need any instance methods.
  */
-namespace event {
 
 /** Identifiers for various codebase in our stack. */
 enum KnownComponent {
@@ -77,9 +76,9 @@ enum Escalation {
 /** Unique identifiers for every event we can describe. */
 enum EID {
 	#define EVENT(name, severity, escalation, number, topic, msg, comments) \
-		name = static_cast<int>(severity) << 28 \
+		name = static_cast<int>(sev##severity) << 28 \
 			| 0x600 << 16 \
-			| static_cast<int>(escalation) << 14 \
+			| static_cast<int>(esc##escalation) << 14 \
 			| number,
 	#include "common/event_tuples.h"
 };
@@ -177,7 +176,6 @@ const size_t MIN_STD_ID_REPR = 11;
  */
 int get_arg_count(int eid);
 
-} // end event namespace
-} // end namespace mtm
+} // end namespace nitro
 
-#endif /* MTM_COMMON_EVENT_H_ */
+#endif /* NITRO_COMMON_EVENT_H_ */

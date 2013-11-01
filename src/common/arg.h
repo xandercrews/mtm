@@ -1,11 +1,11 @@
+#ifndef _NITRO_COMMON_INTERP_ARG_H_
+#define _NITRO_COMMON_INTERP_ARG_H_
+
 /*
  * interp_arg.h
  *
  * Define the wrapper that remembers args to interp-style functions.
  */
-
-#ifndef INTERP_ARG_H_
-#define INTERP_ARG_H_
 
 #include <string>
 

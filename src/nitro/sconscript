@@ -1,0 +1,7 @@
+Import('env')
+Import('common')
+
+prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=common)
+
+Return('prog')
+

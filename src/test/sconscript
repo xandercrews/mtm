@@ -24,6 +24,6 @@ sources.extend(Glob('gmock/gtest/src/gtest_main.cc'))
 gtest = SConscript('gmock/gtest/src/sconscript', variant_dir='build/gtest', duplicate=0)
 gmock = SConscript('gmock/src/sconscript', variant_dir='build/gmock', duplicate=0)
 
-testrunner = test_env.Program(target='mtm-testrunner', source=sources, LIBS=[common, gmock, gtest, 'pthread'])
+testrunner = test_env.Program(target='nitro-testrunner', source=sources, LIBS=[common, gmock, gtest, 'pthread'])
 
 Return('testrunner')

@@ -1,3 +1,5 @@
+#ifndef INTERP_H_
+#define INTERP_H_
 /*
  * interp.h
  *
@@ -25,9 +27,6 @@
  *  Created on: Oct 17, 2013
  *      Author: dhardman
  */
-
-#ifndef INTERP_H_
-#define INTERP_H_
 
 #include <string>
 #include <cstdint>

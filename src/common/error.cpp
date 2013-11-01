@@ -6,9 +6,7 @@
 using std::string;
 using std::runtime_error;
 
-using namespace mtm::event;
-
-namespace mtm {
+namespace nitro {
 
 static std::string make_msg(int eid, char const * source_fname,
 		char const * source_func, unsigned source_line, MANY_ARGS_IMPL) {
@@ -49,10 +47,10 @@ static std::string make_msg(int eid, char const * source_fname,
 	}
 #endif
 
-	bool posix = event::get_component(eid) == kcPOSIX;
+	bool posix = get_component(eid) == kcPOSIX;
 	bool interp_args = !posix;
 	// Do some special handling if we try to render an external error.
-	string msg = event::get_msg(eid);
+	string msg = get_msg(eid);
 	if (msg.empty()) {
 		msg = "An external codebase returned an error/warning/info without an"
 				" associated message.";

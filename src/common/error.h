@@ -1,16 +1,14 @@
-#ifndef MTM_COMMON_ERROR_H_
-#define MTM_COMMON_ERROR_H_
+#ifndef _NITRO_COMMON_ERROR_H_
+#define _NITRO_COMMON_ERROR_H_
 
 #include <stdexcept>
 #include "common/event.h"
 #include "common/interp.h"
 
-using mtm::event::EID;
+namespace nitro {
 
-namespace mtm {
-
-#define MTM_ERROR(eid, ...) \
-	Error(mtm::event::eid, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define NITRO_ERROR(eid, ...) \
+	Error(eid, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 /**
  * A class for all exceptions that MTM emits.
@@ -23,7 +21,7 @@ public:
 	 * data type.
 	 *
 	 * It's expected that constructors will usually be called via the
-	 * MTM_ERROR macro, instead of directly, since that automates usage of the
+	 * NITRO_ERROR macro, instead of directly, since that automates usage of the
 	 * __FILE__ and __LINE__ values exposed by the preprocessor.
 	 */
 	Error(int eid, char const * source_fname, char const * func,
@@ -47,6 +45,6 @@ private:
 };
 
 
-} /* namespace mtm */
+} /* namespace nitro */
 
-#endif /* MTM_COMMON_ERROR_H_ */
+#endif /* NITRO_COMMON_ERROR_H_ */

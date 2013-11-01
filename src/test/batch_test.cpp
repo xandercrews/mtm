@@ -11,15 +11,14 @@
 #include "common/batch.h"
 #include "common/error.h"
 
-using namespace mtm;
-using namespace mtm::event;
+using namespace nitro;
 
 TEST(BatchTest, nonexistent_file) {
 	try {
 		Batch b("doesn't@exist");
 		ADD_FAILURE() << "Expected error about unavailable file.";
 	} catch (Error const & e) {
-		ASSERT_EQ(e.get_event_id(), MTM_1FILE_UNREADABLE);
+		ASSERT_EQ(e.get_event_id(), NITRO_1FILE_UNREADABLE);
 	}
 }
 
@@ -28,7 +27,7 @@ TEST(BatchTest, readable_binary_file) {
 		Batch b("/usr/bin/ls");
 		ADD_FAILURE() << "Expected error about binary file.";
 	} catch (Error const & e) {
-		ASSERT_EQ(e.get_event_id(), MTM_1FILE_BAD_SEEMS_BINARY);
+		ASSERT_EQ(e.get_event_id(), NITRO_1FILE_BAD_SEEMS_BINARY);
 	}
 }
 
@@ -37,7 +36,7 @@ TEST(BatchTest, empty_existing_file) {
 		Batch b("/tmp/");
 		ADD_FAILURE() << "Expected error about unreadable file.";
 	} catch (Error const & e) {
-		ASSERT_EQ(e.get_event_id(), MTM_1FILE_EMPTY);
+		ASSERT_EQ(e.get_event_id(), NITRO_1FILE_EMPTY);
 	}
 }
 

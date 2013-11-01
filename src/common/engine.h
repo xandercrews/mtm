@@ -1,9 +1,14 @@
-#ifndef MTM_COMMON_ENGINE_H_
-#define MTM_COMMON_ENGINE_H_
+#ifndef _NITRO_COMMON_ENGINE_H_
+#define _NITRO_COMMON_ENGINE_H_
 
-namespace mtm {
+namespace nitro {
 
+/**
+ * Does most of the work of the app, and directly or indirectly manages the
+ * lifetime of resources such as batches, threads, ports, etc.
+ */
 class Engine {
+
 public:
 	Engine();
 	virtual ~Engine();
@@ -13,6 +18,6 @@ public:
 	int run();
 };
 
-} /* namespace mtm */
+} /* namespace nitro */
 
-#endif /* MTM_COMMON_ENGINE_H_ */
+#endif /* NITRO_COMMON_ENGINE_H_ */

@@ -1,23 +1,16 @@
-/*
- * cmdline.h
- *
- *  Created on: Oct 24, 2013
- *      Author: dhardman
- */
-
-#ifndef CMDLINE_H_
-#define CMDLINE_H_
+#ifndef _NITRO_COMMON_CMDLINE_H_
+#define _NITRO_COMMON_CMDLINE_H_
 
 #include <string>
 #include <vector>
 #include <utility>
 
-namespace mtm {
+namespace nitro {
 
 const int DEFAULT_PORT = 47000;
 
 /**
- * Parses mtm cmdline and provides logic to react.
+ * Parses nitro cmdline and provides logic to react.
  */
 class Cmdline {
 	struct Data;
@@ -70,6 +63,6 @@ public:
 	std::string get_help() const;
 };
 
-} /* namespace mtm */
+} /* namespace nitro */
 
 #endif /* CMDLINE_H_ */

@@ -7,17 +7,16 @@
 #include "test/test_util.h"
 
 using namespace std;
-using namespace mtm;
-using namespace mtm::event;
+using namespace nitro;
 
 TEST(EventTest, no_dups) {
 	typedef std::map<int, char const *> Map;
 	Map names_by_number;
-	size_t total = event::get_item_count();
+	size_t total = get_item_count();
 	for (size_t i = 0; i < total; ++i) {
-		event::EID id = event::get_item_id(i);
-		auto number = event::get_nonunique_number(id);
-		auto name = event::get_symbolic_name(id);
+		EID id = get_item_id(i);
+		auto number = get_nonunique_number(id);
+		auto name = get_symbolic_name(id);
 		if (names_by_number.find(number) == names_by_number.end()) {
 			names_by_number[number] = name;
 		} else {
@@ -28,19 +27,19 @@ TEST(EventTest, no_dups) {
 }
 
 TEST(EventTest, valid_names_and_argrefs) {
-	size_t total = event::get_item_count();
+	size_t total = get_item_count();
 	for (size_t i = 0; i < total; ++i) {
 
-		event::EID id = event::get_item_id(i);
-		auto name = event::get_symbolic_name(id);
+		EID id = get_item_id(i);
+		auto name = get_symbolic_name(id);
 		for (auto p = name; *p; ++p) {
 			if (toupper(*p) != *p) {
 				ADD_FAILURE() << name << " is not upper-case.";
 				break;
 			}
 		}
-		if (strncmp(name, "MTM_", 4) != 0) {
-			ADD_FAILURE() << name << " does not begin with \"MTM_\".";
+		if (strncmp(name, "NITRO_", 6) != 0) {
+			ADD_FAILURE() << name << " does not begin with \"NITRO_\".";
 		}
 
 		// Scan the message text. Notice which args have been used; verify
@@ -48,7 +47,7 @@ TEST(EventTest, valid_names_and_argrefs) {
 		// punctuation.
 		bool used_argrefs[] = {false, false, false, false, false, false, false,
 				false, false};
-		auto msg = event::get_msg(id);
+		auto msg = get_msg(id);
 		string prefix = interp("Message for %1 (\"%2\") ", name, msg);
 		if (isalpha(*msg) && toupper(*msg) != *msg) {
 			ADD_FAILURE() << prefix << "doesn't begin with a capital letter.";
@@ -157,20 +156,20 @@ TEST(EventTest, valid_names_and_argrefs) {
 }
 
 TEST(EventTest, known_event_properties) {
-	auto e = MTM_FUNC_NOT_IMPLEMENTED;
-	EXPECT_STREQ("MTM_FUNC_NOT_IMPLEMENTED", get_symbolic_name(e));
+	auto e = NITRO_FUNC_NOT_IMPLEMENTED;
+	EXPECT_STREQ("NITRO_FUNC_NOT_IMPLEMENTED", get_symbolic_name(e));
 	EXPECT_EQ(sevERROR, get_severity(e));
 	EXPECT_EQ(kcMTM, get_component(e));
 	EXPECT_EQ(escINTERNAL, get_escalation(e));
 	EXPECT_EQ(1, get_nonunique_number(e));
-	EXPECT_STREQ("domain.mtm.general", get_topic(e));
+	EXPECT_STREQ("domain.nitro.internal", get_topic(e));
 	expect_str_contains(get_msg(e), "not yet been implemented");
 	expect_str_contains(get_comments(e), "stubbed");
 	EXPECT_EQ(0, get_arg_count(e));
 }
 
 TEST(EventTest, multi_arg_count) {
-	auto e = MTM_1FILE_BAD_HUGE_LINE_2BYTES;
+	auto e = NITRO_1FILE_BAD_HUGE_LINE_2BYTES;
 	EXPECT_EQ(2, get_arg_count(e));
 }
 
