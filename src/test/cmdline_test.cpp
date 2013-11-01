@@ -13,17 +13,17 @@ using namespace nitro;
 TEST(CmdlineTest, invalid_ctor_with_no_args) {
 	Cmdline x(0, 0);
 	ASSERT_FALSE(x.help_needed());
-	EXPECT_STREQ("mtm", x.get_program_name());
+	EXPECT_STREQ("nitro", x.get_program_name());
 }
 
 TEST(CmdlineTest, help_needed_with_help_explicitly_requested) {
-	char const * args[] = {"mtm", "--help"};
+	char const * args[] = {"nitro", "--help"};
 	Cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
 }
 
 TEST(CmdlineTest, help_needed_with_error) {
-	char const * args[] = {"mtm", "--port"};
+	char const * args[] = {"nitro", "--port"};
 	Cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
 	// Should get error about needing an argument for --port.
@@ -31,21 +31,21 @@ TEST(CmdlineTest, help_needed_with_error) {
 }
 
 TEST(CmdlineTest, bogus_flag) {
-	char const * args[] = {"mtm", "--bogus"};
+	char const * args[] = {"nitro", "--bogus"};
 	Cmdline x(2, args);
 	ASSERT_TRUE(x.get_errors().empty());
 	EXPECT_STREQ("--bogus", x.get_positional_args()[0]);
 }
 
 TEST(CmdlineTest, non_numeric_port_error) {
-	char const * args[] = {"mtm", "--port", "abc"};
+	char const * args[] = {"nitro", "--port", "abc"};
 	Cmdline x(3, args);
 	// Should get error about numeric port.
 	ASSERT_TRUE(strstr(x.get_errors().c_str(), "Expected numeric port value") != 0);
 }
 
 TEST(CmdlineTest, out_of_range_port_error) {
-	char const * args[] = {"mtm", "--port", "1234567"};
+	char const * args[] = {"nitro", "--port", "1234567"};
 	Cmdline x(3, args);
 	// Should get error about value out of range.
 	ASSERT_TRUE(strstr(x.get_errors().c_str(), "6553"/*6 or 5*/) != 0);

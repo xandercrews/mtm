@@ -156,8 +156,8 @@ TEST(EventTest, valid_names_and_argrefs) {
 }
 
 TEST(EventTest, known_event_properties) {
-	auto e = NITRO_FUNC_NOT_IMPLEMENTED;
-	EXPECT_STREQ("NITRO_FUNC_NOT_IMPLEMENTED", get_symbolic_name(e));
+	auto e = NITRO_NOT_IMPLEMENTED;
+	EXPECT_STREQ("NITRO_NOT_IMPLEMENTED", get_symbolic_name(e));
 	EXPECT_EQ(sevERROR, get_severity(e));
 	EXPECT_EQ(kcMTM, get_component(e));
 	EXPECT_EQ(escINTERNAL, get_escalation(e));

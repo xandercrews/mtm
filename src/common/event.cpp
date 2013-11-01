@@ -141,7 +141,7 @@ const char * const SeverityLabels[4] = {
 	"Info",
 	"Warning",
 	"Error",
-	"Fatal"
+	"Fatal error"
 };
 
 char const * get_severity_label(int eid) {

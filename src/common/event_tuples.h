@@ -12,9 +12,9 @@
 // msg: [associated message that is shown, with interp-style substitution]
 // comments: [description used for documentation/explanation purposes]
 
-EVENT(NITRO_FUNC_NOT_IMPLEMENTED, ERROR, INTERNAL, 1,
+EVENT(NITRO_NOT_IMPLEMENTED, ERROR, INTERNAL, 1,
 		"domain.nitro.internal",
-		"Function has not yet been implemented.",
+		"Functionality has not yet been implemented.",
 		"This error is used when we've stubbed out code but do not expect it to"
 		" be called in production environments. It's not helpful except for"
 		" internal diagnostics.")
@@ -57,7 +57,7 @@ EVENT(NITRO_FAILED_TO_LOCK_MUTEX_1POSIX_ERROR, FATAL, INTERNAL, 7,
 
 EVENT(NITRO_TIMED_OUT_AFTER_1MILLIS_LOCKING_MUTEX, ERROR, INTERNAL, 8,
 		"domain.nitro.internal",
-		"Timed out after waiting to acquire a mutex for %1 milliseconds."
+		"Failed to lock mutex within %1 milliseconds."
 		" This may indicate an overly busy system, or a deadlock caused by a"
 		" coding error.",
 		"")
@@ -70,7 +70,15 @@ EVENT(NITRO_FAILED_TO_UNLOCK_MUTEX_1POSIX_ERROR, FATAL, INTERNAL, 9,
 		"This is a fatal error because all multithreading in the application"
 		" is suspect if we cannot unlock a mutex.")
 
-EVENT(NITRO_PRECONDITION_1EXPR_VIOLATED, FATAL, INTERNAL, 10,
+EVENT(NITRO_DEADLOCK, FATAL, INTERNAL, 10,
+		"domain.nitro.internal",
+		"A deadlock was detected. This is a serious bug that needs to be"
+		" immediately. The application must be terminated to avoid undefined"
+		" and risky behavior. Restarting may or may not help.",
+		"Deadlocks are an indication that a coder did not acquire and release"
+		" locks in a consistent order, or used recursion inappropriately.")
+
+EVENT(NITRO_PRECONDITION_1EXPR_VIOLATED, FATAL, INTERNAL, 11,
 		"domain.nitro.internal",
 		"A function was called in a way that violated its requirements."
 		" This makes the entire application's behavior undefined; it is a"
@@ -80,7 +88,7 @@ EVENT(NITRO_PRECONDITION_1EXPR_VIOLATED, FATAL, INTERNAL, 10,
 		" graph is not behaving correctly. An orderly and rapid exit is the"
 		" best way to protect the user from subsequent problems.")
 
-EVENT(NITRO_CHECK_1EXPR_VIOLATED, FATAL, INTERNAL, 11,
+EVENT(NITRO_CHECK_1EXPR_VIOLATED, FATAL, INTERNAL, 12,
 		"domain.nitro.internal",
 		"A function did not behave as expected."
 		" This makes the entire application's behavior undefined; it is a"
@@ -90,14 +98,21 @@ EVENT(NITRO_CHECK_1EXPR_VIOLATED, FATAL, INTERNAL, 11,
 		" graph is not behaving correctly. An orderly and rapid exit is the"
 		" best way to protect the user from subsequent problems.")
 
-EVENT(NITRO_POSTCONDITION_1EXPR_VIOLATED, FATAL, INTERNAL, 12,
+EVENT(NITRO_POSTCONDITION_1EXPR_VIOLATED, FATAL, INTERNAL, 13,
 		"domain.nitro.internal",
 		"A function did not exit in a way that satisfied its contract."
 		" This makes the entire application's behavior undefined; it is a"
 		" serious bug that needs to be reported immediately. The specific"
 		" postcondition that failed was: %1{expression}.",
-		"When preconditions are violated, it means a function in the call"
+		"When postconditions are violated, it means a function in the call"
 		" graph is not behaving correctly. An orderly and rapid exit is the"
 		" best way to protect the user from subsequent problems.")
+
+EVENT(NITRO_ILLEGAL_CALL_IN_STATE_1NAME, ERROR, INTERNAL, 14,
+		"domain.nitro.internal",
+		"Function was called while the state of an object or of the system"
+		" (%1{state descrip}) makes the call illegal. This is a coding error"
+		" that should be reported; its seriousness is unknown.",
+		"")
 
 #undef EVENT
