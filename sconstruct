@@ -21,9 +21,13 @@ else:
 # Make sure all other scripts can use the Environments we've built.
 Export('env')
 
-# Build the core library for mtm, both release and debug.
-common = SConscript('src/common/sconscript', variant_dir='build/common', duplicate=0)
-Export('common')
+# Build the base library for nitro, both release and debug.
+base = SConscript('src/base/sconscript', variant_dir='build/base', duplicate=0)
+Export('base')
+
+# Build the domain library for nitro, both release and debug.
+domain = SConscript('src/domain/sconscript', variant_dir='build/domain', duplicate=0)
+Export('domain')
 
 # Build the main binary, both release and debug.
 binary = SConscript('src/nitro/sconscript', variant_dir='build/nitro', duplicate=0)

@@ -1,5 +1,5 @@
-#ifndef _NITRO_COMMON_BATCH_H_
-#define _NITRO_COMMON_BATCH_H_
+#ifndef _NITRO_DOMAIN_BATCH_H_
+#define _NITRO_DOMAIN_BATCH_H_
 
 #include <cstring> // for size_t
 

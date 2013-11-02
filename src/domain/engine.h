@@ -1,5 +1,5 @@
-#ifndef _NITRO_COMMON_ENGINE_H_
-#define _NITRO_COMMON_ENGINE_H_
+#ifndef _NITRO_DOMAIN_ENGINE_H_
+#define _NITRO_DOMAIN_ENGINE_H_
 
 namespace nitro {
 
@@ -20,4 +20,4 @@ public:
 
 } /* namespace nitro */
 
-#endif /* NITRO_COMMON_ENGINE_H_ */
+#endif /* NITRO_DOMAIN_ENGINE_H_ */

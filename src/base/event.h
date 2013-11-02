@@ -1,5 +1,5 @@
-#ifndef _NITRO_COMMON_EVENT_H_
-#define _NITRO_COMMON_EVENT_H_
+#ifndef _BASE_EVENT_H_
+#define _BASE_EVENT_H_
 
 /**
  *  Integrates Nitro with Adaptive's event dictionary. See the following wiki
@@ -80,7 +80,7 @@ enum EID {
 			| 0x600 << 16 \
 			| static_cast<int>(esc##escalation) << 14 \
 			| number,
-	#include "common/event_tuples.h"
+	#include "base/event_tuples.h"
 };
 
 /**
@@ -178,4 +178,4 @@ int get_arg_count(int eid);
 
 } // end namespace nitro
 
-#endif /* NITRO_COMMON_EVENT_H_ */
+#endif /* NITRO_BASE_EVENT_H_ */

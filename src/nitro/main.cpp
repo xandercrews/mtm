@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-#include "common/cmdline.h"
-#include "common/engine.h"
+#include "domain/cmdline.h"
+#include "domain/engine.h"
 
 using namespace nitro;
 

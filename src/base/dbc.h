@@ -1,5 +1,5 @@
-#ifndef _NITRO_COMMON_DBC_H_
-#define _NITRO_COMMON_DBC_H_
+#ifndef _BASE_DBC_H_
+#define _BASE_DBC_H_
 
 #include "common/error.h"
 

@@ -1,0 +1,6 @@
+Import('env')
+
+domain = env.Library(target='nitro-domain', source=Glob('*.cpp'))
+
+Return('domain')
+

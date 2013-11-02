@@ -31,7 +31,7 @@
 #include <string>
 #include <cstdint>
 
-#include "common/arg.h"
+#include "base/arg.h"
 
 // First, make it possible to declare interp-style functions easily, without
 // using C-style varargs in the decl.

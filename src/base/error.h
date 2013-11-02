@@ -1,9 +1,9 @@
-#ifndef _NITRO_COMMON_ERROR_H_
-#define _NITRO_COMMON_ERROR_H_
+#ifndef _BASE_ERROR_H_
+#define _BASE_ERROR_H_
 
 #include <stdexcept>
-#include "common/event.h"
-#include "common/interp.h"
+#include "base/event.h"
+#include "base/interp.h"
 
 namespace nitro {
 
@@ -47,4 +47,4 @@ private:
 
 } /* namespace nitro */
 
-#endif /* NITRO_COMMON_ERROR_H_ */
+#endif /* NITRO_BASE_ERROR_H_ */

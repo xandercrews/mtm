@@ -1,5 +1,5 @@
-#ifndef _NITRO_COMMON_INTERP_ARG_H_
-#define _NITRO_COMMON_INTERP_ARG_H_
+#ifndef _BASE_INTERP_ARG_H_
+#define _BASE_INTERP_ARG_H_
 
 /*
  * interp_arg.h

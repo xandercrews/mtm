@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "common/interp.h"
+#include "base/interp.h"
 
 const size_t FMTSPEC_BUF_LEN = 64;
 

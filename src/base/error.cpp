@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include "common/error.h"
-#include "common/interp.h"
+#include "base/error.h"
+#include "base/interp.h"
 
 using std::string;
 using std::runtime_error;
