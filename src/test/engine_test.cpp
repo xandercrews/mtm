@@ -5,8 +5,6 @@
  *      Author: dhardman
  */
 
-#include "common/engine.h"
+#include "domain/engine.h"
 
-namespace nitro {
-
-} // end namespace nitro
+using namespace nitro;

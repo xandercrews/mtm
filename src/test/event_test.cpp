@@ -2,8 +2,8 @@
 #include <errno.h>
 
 #include "gtest/gtest.h"
-#include "common/event.h"
-#include "common/interp.h"
+#include "base/event.h"
+#include "base/interp.h"
 #include "test/test_util.h"
 
 using namespace std;

@@ -1,4 +1,4 @@
-#include "common/interp.h"
+#include "base/interp.h"
 #include "gtest/gtest.h"
 
 TEST(InterpTest, null_fmt) {

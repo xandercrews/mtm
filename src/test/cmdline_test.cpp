@@ -5,10 +5,10 @@
  *      Author: dhardman
  */
 
-#include "common/cmdline.h"
+#include "domain/cmdline.h"
 #include "gtest/gtest.h"
 
-using namespace nitro;
+using nitro::Cmdline;
 
 TEST(CmdlineTest, invalid_ctor_with_no_args) {
 	Cmdline x(0, 0);

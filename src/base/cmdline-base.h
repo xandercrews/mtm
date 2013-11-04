@@ -8,14 +8,14 @@
 /**
  * Defines an interface for parsing a cmdline and providing logic to react.
  */
-class Cmdline {
+class CmdlineBase {
 public:
 	typedef std::pair<char const *, char const *> Option;
 	typedef std::vector<Option> Options;
 	typedef std::vector<char const *> Strings;
 
-	Cmdline(int argc, char const ** argv);
-	virtual ~Cmdline();
+	CmdlineBase(int argc, char const ** argv);
+	virtual ~CmdlineBase();
 
 	Options const & get_options() const;
 	Strings const & get_positional_args() const;
@@ -24,8 +24,8 @@ public:
 
 	bool is_flag(char const * arg) const;
 	bool is_option(char const * arg) const;
-	virtual const char * get_valid_flags() = 0;
-	virtual const char * get_valid_options() = 0;
+	virtual const char * get_valid_flags() const = 0;
+	virtual const char * get_valid_options() const = 0;
 
 	/**
 	 * @return argv[0]
@@ -62,9 +62,9 @@ public:
 
 private:
 	char const * program_name;
-	Cmdline::Options options;
-	Cmdline::Strings positional_args;
-	Cmdline::Strings flags;
+	Options options;
+	Strings positional_args;
+	Strings flags;
 	std::string errors;
 
 protected:

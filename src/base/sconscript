@@ -1,6 +1,6 @@
 Import('env')
 
-common = env.Library(target='nitro-common', source=Glob('*.cpp'))
+base = env.Library(target='nitro-base', source=Glob('*.cpp'))
 
-Return('common')
+Return('base')
 

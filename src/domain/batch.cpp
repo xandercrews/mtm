@@ -13,10 +13,10 @@
 using std::min;
 using std::max;
 
-#include "common/batch.h"
-#include "common/interp.h"
-#include "common/error.h"
-#include "common/event.h"
+#include "base/interp.h"
+#include "base/error.h"
+#include "base/event.h"
+#include "domain/batch.h"
 
 namespace nitro {
 

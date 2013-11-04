@@ -1,7 +1,7 @@
 #include <errno.h>
 
 #include "gtest/gtest.h"
-#include "common/error.h"
+#include "base/error.h"
 #include "test/test_util.h"
 
 using namespace nitro;

@@ -7,6 +7,7 @@
 
 #include <string.h>
 
+#include "base/interp.h"
 #include "domain/cmdline.h"
 
 namespace nitro {
@@ -24,21 +25,25 @@ char const * Cmdline::get_default_program_name() const {
 }
 
 void Cmdline::parse(int argc, char const ** argv) {
-	::Cmdline::parse(argc, argv);
+	CmdlineBase::parse(argc, argv);
 	char const * port = get_option("--port");
 	if (port) {
-		auto end = strchr(value, 0);
-		auto last_digit = end;
-		auto n = strtol(value, &last_digit, 10);
+		auto end = strchr(port, 0);
+		char * last_digit;
+		auto n = strtol(port, &last_digit, 10);
 		if (n < 1024 || n > 65536 || last_digit != end) {
 			add_error(interp("Expected numeric port value > 1024 and < 65536"
-					" after %1{arg} -- not %2{value}.", arg, value));
+					" after --port, not %1{value}.", port));
 		}
 	}
 }
 
-Cmdline::Cmdline(int argc, char const ** argv) : ::Cmdline(argc, argv) {
+Cmdline::Cmdline(int argc, char const ** argv) : CmdlineBase(argc, argv) {
 }
+
+Cmdline::~Cmdline() {
+}
+
 
 std::string Cmdline::get_help() const {
 	return interp(
@@ -53,7 +58,7 @@ std::string Cmdline::get_help() const {
 			"    Options:\n"
 			"      --port or -p  -- Override listen port (%3{defport} is used by default).\n"
 			"\n",
-			data->errors, get_program_name(), DEFAULT_PORT
+			get_errors(), get_program_name(), DEFAULT_PORT
 		);
 }
 

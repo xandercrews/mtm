@@ -6,7 +6,7 @@
 #include <map>
 #include <string.h>
 
-#include "common/event.h"
+#include "base/event.h"
 
 namespace nitro {
 
@@ -24,7 +24,7 @@ struct EventData {
 EventData const ITEMS[] = {
 	#define EVENT(name, severity, escalation, number, topic, msg, comments) \
 	{ name, #name, sev##severity, esc##escalation, number, topic, msg, comments },
-	#include "common/event_tuples.h"
+	#include "base/event_tuples.h"
 };
 
 static const size_t ITEM_COUNT = sizeof(ITEMS) / sizeof(EventData);
@@ -38,7 +38,7 @@ static EventData const * get_item_by_id(int eid) {
 		size_t i = 0;
 		#define EVENT(name, severity, escalation, number, topic, msg, comments) \
 			the_map[name] = i++;
-		#include "common/event_tuples.h"
+		#include "base/event_tuples.h"
 	}
 
 	try {

@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "common/engine.h"
+#include "domain/engine.h"
 
 namespace nitro {
 

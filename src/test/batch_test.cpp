@@ -8,8 +8,8 @@
 #include <stdlib.h>
 
 #include "gtest/gtest.h"
-#include "common/batch.h"
-#include "common/error.h"
+#include "base/error.h"
+#include "domain/batch.h"
 
 using namespace nitro;
 

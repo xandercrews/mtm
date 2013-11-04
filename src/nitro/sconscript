@@ -2,7 +2,7 @@ Import('env')
 Import('base')
 Import('domain')
 
-prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[base, domain])
+prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[domain, base])
 
 Return('prog')
 
