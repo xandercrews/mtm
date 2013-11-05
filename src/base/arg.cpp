@@ -53,7 +53,7 @@ arg::arg(arg_compatible const & value) : arg_type(atCompatible),
 
 std::string arg::to_string(char const * format) const {
 	std::string txt;
-	return append_to(txt);
+	return append_to(txt, format);
 }
 
 std::string & arg::append_to(std::string & txt, char const * format) const {

@@ -1,48 +1,85 @@
 #include <stdexcept>
 #include <thread>
-#if 0
-#include <zmq.hpp>
-#endif
+#include <zmq.h>
 
 #include "base/dbc.h"
-#include "domain/engine.h"
 #include "base/event_ids.h"
+#include "base/interp.h"
+#include "domain/engine.h"
+#include "domain/event_ids.h"
 
 namespace nitro {
 
-engine::engine() : publish_port(47000),	listen_port(47001), follow_mode(false),
-		running(false) {
+struct engine::data_t {
+	int publish_port;
+	int listen_port;
+	bool follow_mode;
+	void * context;
+	void * reqrep_socket;
+	std::string transport;
+
+	data_t() : publish_port(47000),	listen_port(47001), follow_mode(false),
+			context(0), reqrep_socket(0) {
+	}
+
+	~data_t() {
+		if (reqrep_socket) {
+			zmq_close(reqrep_socket);
+		}
+		if (context) {
+			zmq_ctx_destroy(context);
+		}
+	}
+
+	inline bool is_running() const {
+		return context != 0;
+	}
+};
+
+engine::engine() : data(new data_t) {
 }
 
 engine::~engine() {
+	delete data;
+}
+
+void engine::init_zmq() {
+	PRECONDITION(!data->is_running());
+	auto ctx = zmq_ctx_new();
+	data->reqrep_socket = zmq_socket(data->context, ZMQ_REP);
+	int rc = zmq_bind(data->reqrep_socket,
+			interp("%1{transport}://*:%2{port}", data->transport,
+					data->listen_port).c_str());
+	CHECK(rc == 0);
+	data->context = ctx;
 }
 
 void engine::set_publish_port(int port) {
-	PRECONDITION(!running);
+	PRECONDITION(!data->is_running());
 	PRECONDITION(port > 1024 && port < 65536);
-	publish_port = port;
+	data->publish_port = port;
 }
 
 inline int engine::get_publish_port() const {
-	return publish_port;
+	return data->publish_port;
 }
 
 void engine::set_listen_port(int port) {
-	PRECONDITION(!running);
+	PRECONDITION(!data->is_running());
 	PRECONDITION(port > 1024 && port < 65536);
 }
 
 inline int engine::get_listen_port() const {
-	return listen_port;
+	return data->listen_port;
 }
 
 void engine::set_follow_mode(bool value) {
-	PRECONDITION(!running);
-	follow_mode = value;
+	PRECONDITION(!data->is_running());
+	data->follow_mode = value;
 }
 
 inline bool engine::get_follow_mode() const {
-	return follow_mode;
+	return data->follow_mode;
 }
 
 void engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
@@ -62,7 +99,7 @@ void send_progress_report_thread_main() {
 }
 
 int engine::run() {
-	PRECONDITION(listen_port != publish_port);
+	PRECONDITION(data->listen_port != data->publish_port);
 
 #if 0
 	start listening on listen_port
@@ -96,6 +133,7 @@ int engine::run() {
 		}
 	}
 #endif
+	return 0;
 }
 
 } /* namespace mtm */

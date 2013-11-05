@@ -33,7 +33,11 @@ int cmdline::validate_port(char const * port_switch, int exclusive_port) {
 		n = strtol(port, &last_digit, 10);
 		if (n < 1024 || n > 65536 || last_digit != end) {
 			add_error(interp("Expected numeric port value > 1024 and < 65536"
-					" after %1{port_switch}, not \"%2{value}\".", port_switch));
+					" after %1{port_switch}, not \"%2{value}\".",
+					port_switch, n));
+		} else if (n == exclusive_port) {
+			add_error(interp("Expected %1{port_switch} to get a unique value,"
+					" but port %2{value} is re-used.", port_switch, n));
 		}
 	}
 	return n;

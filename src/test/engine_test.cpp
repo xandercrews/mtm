@@ -6,5 +6,6 @@
  */
 
 #include "domain/engine.h"
+#include "zmq.h"
 
 using namespace nitro;

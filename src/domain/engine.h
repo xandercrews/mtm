@@ -13,9 +13,6 @@ public:
 	engine();
 	virtual ~engine();
 
-	// These properties can only be changed before the engine begins to run.
-	// As a result, we don't need to synchronize them.
-
 	void set_publish_port(int port);
 	int get_publish_port() const;
 
@@ -24,10 +21,10 @@ public:
 
 	void set_follow_mode(bool value);
 	bool get_follow_mode() const;
-/*
-    - publish queue: zmq::socket_t
-    - listen queue: zmq::socket_t
-*/
+
+	char const * get_transport() const;
+	void set_transport(char const * value);
+
 	void handle_ping_request() const;
 	void handle_terminate_request() const;
 	void send_progress_report() const;
@@ -35,12 +32,12 @@ public:
 	int run();
 
 private:
-	int publish_port;
-	int listen_port;
-	bool follow_mode;
-	bool running;
+	void init_zmq();
+
+	struct data_t;
+	data_t * data;
 };
 
-} /* namespace nitro */
+} // end namespace nitro
 
-#endif /* NITRO_DOMAIN_ENGINE_H_ */
+#endif // sentry

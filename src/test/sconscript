@@ -6,6 +6,10 @@ Import('domain')
 # propagate any changes back to the master env.
 test_env = env.Clone()
 
+# Be less picky about warnings and errors in this library, since it's not under
+# our control.
+test_env['CCFLAGS'] = test_env['CCFLAGS'].replace(' -Wmissing-field-initializers', '')
+
 # Make sure gtest is in the include path.
 cpppath = test_env['CPPPATH']
 # If cpppath is a single string instead of a list...

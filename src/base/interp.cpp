@@ -62,8 +62,8 @@ static char const * get_fmt_spec(char const * first_char_after,
 				if (fmtspec) {
 
 					// Can we fit it in the buffer we've been given?
-					auto fmtspec_len = end_of_fmtspec - fmtspec;
-					if (fmtspec_len < sizeof(fmtspec_buf) - 1) {
+					size_t fmtspec_len = end_of_fmtspec - fmtspec;
+					if (fmtspec_len < sizeof(fmtspec_buf) - 1u) {
 						strncpy(fmtspec_buf, fmtspec, fmtspec_len);
 						fmtspec_buf[fmtspec_len] = 0;
 						fmtspec = fmtspec_buf;
@@ -88,7 +88,7 @@ std::string & interp_into(std::string & txt, char const * format,
 	// converts into an inlined set of a char in a buffer.
 	txt.reserve((end - format) * 2);
 
-	auto max_idx_char = '0' + max_argref;
+	auto max_idx_char = static_cast<char>('0' + max_argref);
 	for (char const * p = format; p < end; ++p) {
 		char c = *p;
 		// Look for potential arg refs.

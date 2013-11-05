@@ -13,10 +13,61 @@ if not GetOption('verbose'):
     env['CXXCOMSTR'] = "Compiling $SOURCE ..."
     env['LINKCOMSTR'] = "Linking $TARGET ..."
 
+# In order to keep this codebase as clean as possible, we want to be very picky
+# about warnings. We don't turn on *all* of them, but we turn on most. (An
+# example of one we don't care about is -Wdouble-promotion, that warns about
+# using a double when a float might suffice. That only matters with 32-bit
+# CPUs.) This list is close to the combination of -Wall and -Wextra, but not
+# identical.
+warnings = '''
+-Waddress
+-Warray-bounds  
+-Wc++11-compat  
+-Wchar-subscripts
+-Wchar-subscripts  
+-Wclobbered  
+-Wcomment
+-Wcomment  
+-Wempty-body  
+-Wenum-compare 
+-Wformat
+-Wformat   
+-Wignored-qualifiers 
+-Wmain  
+-Wmaybe-uninitialized 
+-Wmissing-braces 
+-Wmissing-field-initializers  
+-Wno-coverage-mismatch
+-Wnonnull  
+-Wparentheses  
+-Wreorder   
+-Wreturn-type  
+-Wsequence-point  
+-Wsign-compare  
+-Wsign-compare  
+-Wstrict-aliasing  
+-Wstrict-overflow=1  
+-Wswitch  
+-Wtrigraphs  
+-Wtype-limits  
+-Wuninitialized  
+-Wuninitialized  
+-Wunknown-pragmas  
+-Wunused-but-set-parameter  
+-Wunused-function  
+-Wunused-label     
+-Wunused-parameter 
+-Wunused-value     
+-Wunused-variable  
+-Wvolatile-register-var 
+'''
+warnings = ' '.join(w.strip() for w in warnings.strip().split('\n'))
+
+flags = "-D_FILE_OFFSET_BITS=64 " + warnings + ' '
 if GetOption('release'):
-	env['CCFLAGS'] = '-O3 -D_FILE_OFFSET_BITS=64'
+	env['CCFLAGS'] = flags + '-O3'
 else:
-	env['CCFLAGS'] = '-g -D_FILE_OFFSET_BITS=64'
+	env['CCFLAGS'] = flags + '-g'
 
 # Make sure all other scripts can use the Environments we've built.
 Export('env')

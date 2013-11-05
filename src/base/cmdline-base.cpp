@@ -30,8 +30,8 @@ bool cmdline_base::is_option(char const * arg) const {
 
 bool matches_switch(char const * long_or_short_form, char const * long_form) {
 	return long_form && long_or_short_form &&
-		strcmp(long_or_short_form, long_form) == 0
-			|| long_or_short_form[1] == long_form[2];
+		(strcmp(long_or_short_form, long_form) == 0
+			|| long_or_short_form[1] == long_form[2]);
 }
 
 void cmdline_base::add_error(std::string const & msg) {
