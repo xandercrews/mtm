@@ -2,7 +2,9 @@ Import('env')
 Import('base')
 Import('domain')
 
-prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[domain, base])
+zmq_lib = File('/usr/lib/libzmq.a')
+jsoncpp_lib = File('/usr/lib/libjsoncpp.a')
+prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[domain, base, zmq_lib, jsoncpp_lib, 'pthread'])
 
 Return('prog')
 
