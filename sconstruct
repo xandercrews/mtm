@@ -2,7 +2,7 @@
 # to src. Don't define other include paths. This keeps includes exceedingly clean and
 # regular, and it makes includes unambiguous instead of mysterious.
 # Also, force all builds to be done with C++ 11 syntax and libraries.
-env = Environment(CPPPATH='#/src', CXXFLAGS='-std=c++0x')
+env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include'], CXXFLAGS='-std=c++0x')
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
@@ -21,19 +21,23 @@ else:
 # Make sure all other scripts can use the Environments we've built.
 Export('env')
 
-# Build the base library for nitro, both release and debug.
+# Build the base library for nitro.
 base = SConscript('src/base/sconscript', variant_dir='build/base', duplicate=0)
 Export('base')
 
-# Build the domain library for nitro, both release and debug.
+# Build jsoncpp.
+jsoncpp = SConscript('src/jsoncpp/sconscript', variant_dir='build/jsoncpp', duplicate=0)
+Export('jsoncpp')
+
+# Build the domain library for nitro.
 domain = SConscript('src/domain/sconscript', variant_dir='build/domain', duplicate=0)
 Export('domain')
 
-# Build the main binary, both release and debug.
+# Build the main binary.
 binary = SConscript('src/nitro/sconscript', variant_dir='build/nitro', duplicate=0)
 Default(binary)
 
-# Build tests, both release and debug.
+# Build tests.
 testrunner = SConscript('src/test/sconscript', variant_dir='build/test', duplicate=0)
 
 Default(testrunner)

@@ -1,0 +1,6 @@
+Import('env')
+
+jsoncpp = env.Library(target='jsoncpp', source=Glob('src/lib_json/*.cpp'))
+
+Return('jsoncpp')
+
