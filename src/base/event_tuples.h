@@ -115,4 +115,44 @@ EVENT(NITRO_ILLEGAL_CALL_IN_STATE_1NAME, ERROR, INTERNAL, 14,
 		" that should be reported; its seriousness is unknown.",
 		"")
 
+EVENT(NITRO_HERE_IS_ASSIGNMENT, INFO, INTERNAL, 15,
+		"domain.nitro.internal",
+		"Here is an assignment of a few new commands to run.",
+		"")
+
+EVENT(NITRO_NEED_ASSIGNMENT, INFO, INTERNAL, 16,
+		"domain.nitro.internal",
+		"I am running out of work to do. Give me another assignment.",
+		"")
+
+EVENT(NITRO_ASSIGNMENT_PROGRESS_REPORT, INFO, INTERNAL, 17,
+		"domain.nitro.internal",
+		"Here is information about how much I've done on my assignment.",
+		"")
+
+EVENT(NITRO_BATCH_PROGRESS_REPORT, INFO, INTERNAL, 18,
+		"domain.nitro.internal",
+		"Here is information about how much I've done on my batch.",
+		"")
+
+EVENT(NITRO_BATCH_SUBMITTED, INFO, INTERNAL, 19,
+		"domain.nitro.internal",
+		"Here is a new batch to work on.",
+		"")
+
+EVENT(NITRO_TERMINATE_REQUEST, INFO, INTERNAL, 20,
+		"domain.nitro.internal",
+		"Please stop all work and exit.",
+		"")
+
+EVENT(NITRO_PING_REQUEST, INFO, INTERNAL, 21,
+		"domain.nitro.internal",
+		"Please respond if you're alive.",
+		"")
+
+EVENT(NITRO_PING_RESPONSE, INFO, INTERNAL, 22,
+		"domain.nitro.internal",
+		"I am alive, and I've responded as you asked.",
+		"")
+
 #undef EVENT

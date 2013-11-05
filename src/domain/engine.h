@@ -25,12 +25,13 @@ public:
 	void set_follow_mode(bool value);
 	bool get_follow_mode() const;
 /*
-    - publish port: +range[1025..65535] = 47000
-    - listen port: +range[1025..65535] = 47001
-    - publish queue: mq.connection
-    - listen queue: mq.connection
-    - heartbeats: map of +name to date
+    - publish queue: zmq::socket_t
+    - listen queue: zmq::socket_t
 */
+	void handle_ping_request() const;
+	void handle_terminate_request() const;
+	void send_progress_report() const;
+
 	int run();
 
 private:

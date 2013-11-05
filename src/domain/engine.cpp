@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <thread>
 #if 0
 #include <zmq.hpp>
 #endif
@@ -43,11 +44,40 @@ inline bool Engine::get_follow_mode() const {
 	return follow_mode;
 }
 
+void Engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
+	// send back a ping response
+}
+
+void Engine::handle_terminate_request(/*zmq::message_t const & msg*/) const {
+	// shut down the program
+}
+
+void Engine::send_progress_report() const {
+	const std::chrono::milliseconds DURATION(2000);
+	while (true) {
+		std::this_thread::sleep_for(DURATION);
+		// zmq::send(msg with code = NITRO_BATCH_PROGRESS_REPORT
+	}
+}
+
 int Engine::run() {
 	PRECONDITION(listen_port != publish_port);
 
 #if 0
-	start listening
+	start listening on listen_port
+
+	    If I get a json msg where the event code == NITRO_PING_REQUEST,
+	    ... call handle_ping_request(). (see base/event_tuples.h to see how
+	    ... the numeric value of NITRO_PING_REQUEST is built into a 32-bit
+	    ... number).
+
+	    If I get a json msg where the event code == NITRO_TERMINATE_REQUEST,
+	    ... call handle_terminate_request();
+
+	get ready to publish on publish_port
+
+
+
 #endif
 
 #if 0
