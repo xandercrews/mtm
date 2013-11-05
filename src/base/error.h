@@ -2,20 +2,18 @@
 #define _BASE_ERROR_H_
 
 #include <stdexcept>
-#include "base/event.h"
+#include "base/events.h"
 #include "base/interp.h"
 
-namespace nitro {
-
-#define NITRO_ERROR(eid, ...) \
-	Error(eid, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
+#define ERROR_EVENT(eid, ...) \
+	error_event(eid, __FILE__, __func__, __LINE__, ##__VA_ARGS__)
 
 /**
  * A class for all exceptions that MTM emits.
  */
-class Error: public std::runtime_error {
+class error_event: public std::runtime_error {
 public:
-	virtual ~Error();
+	virtual ~error_event();
 	/**
 	 * Create an error with an event, plus an arbitrary number of args of any
 	 * data type.
@@ -24,14 +22,14 @@ public:
 	 * NITRO_ERROR macro, instead of directly, since that automates usage of the
 	 * __FILE__ and __LINE__ values exposed by the preprocessor.
 	 */
-	Error(int eid, char const * source_fname, char const * func,
+	error_event(int eid, char const * source_fname, char const * func,
 			unsigned source_line, MANY_OARGS);
 
 	// I did not implement any of the optimized overloads for interp-style
 	// functions, because it keeps code cleaner. Exceptions are by definition
 	// exceptional--they are not a "common case" that we have to make fast.
 
-	// Let code lookup information about the error.
+	// Allow other code to lookup information about the error.
 	int get_event_id() const;
 	char const * get_source_fname() const;
 	char const * get_source_func() const;
@@ -44,7 +42,4 @@ private:
 	unsigned source_line;
 };
 
-
-} /* namespace nitro */
-
-#endif /* NITRO_BASE_ERROR_H_ */
+#endif // sentry

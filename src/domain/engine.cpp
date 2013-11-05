@@ -6,53 +6,54 @@
 
 #include "base/dbc.h"
 #include "domain/engine.h"
+#include "base/event_ids.h"
 
 namespace nitro {
 
-Engine::Engine() : publish_port(47000),	listen_port(47001), follow_mode(false),
+engine::engine() : publish_port(47000),	listen_port(47001), follow_mode(false),
 		running(false) {
 }
 
-Engine::~Engine() {
+engine::~engine() {
 }
 
-void Engine::set_publish_port(int port) {
+void engine::set_publish_port(int port) {
 	PRECONDITION(!running);
 	PRECONDITION(port > 1024 && port < 65536);
 	publish_port = port;
 }
 
-inline int Engine::get_publish_port() const {
+inline int engine::get_publish_port() const {
 	return publish_port;
 }
 
-void Engine::set_listen_port(int port) {
+void engine::set_listen_port(int port) {
 	PRECONDITION(!running);
 	PRECONDITION(port > 1024 && port < 65536);
 }
 
-inline int Engine::get_listen_port() const {
+inline int engine::get_listen_port() const {
 	return listen_port;
 }
 
-void Engine::set_follow_mode(bool value) {
+void engine::set_follow_mode(bool value) {
 	PRECONDITION(!running);
 	follow_mode = value;
 }
 
-inline bool Engine::get_follow_mode() const {
+inline bool engine::get_follow_mode() const {
 	return follow_mode;
 }
 
-void Engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
+void engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
 	// send back a ping response
 }
 
-void Engine::handle_terminate_request(/*zmq::message_t const & msg*/) const {
+void engine::handle_terminate_request(/*zmq::message_t const & msg*/) const {
 	// shut down the program
 }
 
-void Engine::send_progress_report() const {
+void send_progress_report_thread_main() {
 	const std::chrono::milliseconds DURATION(2000);
 	while (true) {
 		std::this_thread::sleep_for(DURATION);
@@ -60,7 +61,7 @@ void Engine::send_progress_report() const {
 	}
 }
 
-int Engine::run() {
+int engine::run() {
 	PRECONDITION(listen_port != publish_port);
 
 #if 0
@@ -74,9 +75,9 @@ int Engine::run() {
 	    If I get a json msg where the event code == NITRO_TERMINATE_REQUEST,
 	    ... call handle_terminate_request();
 
-	get ready to publish on publish_port
+	get ready to publish on publish_port (accept subscriber requests)
 
-
+	   call send_progress_report_thread_main();
 
 #endif
 

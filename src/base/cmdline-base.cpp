@@ -14,14 +14,14 @@ bool in_alternatives_str(char const * item, char const * alternatives) {
 	return false;
 }
 
-bool CmdlineBase::is_flag(char const * arg) const {
+bool cmdline_base::is_flag(char const * arg) const {
 	if (arg && *arg == '-') {
 		return in_alternatives_str(arg, get_valid_flags());
 	}
 	return false;
 }
 
-bool CmdlineBase::is_option(char const * arg) const {
+bool cmdline_base::is_option(char const * arg) const {
 	if (arg && *arg == '-') {
 		return in_alternatives_str(arg, get_valid_options());
 	}
@@ -34,14 +34,14 @@ bool matches_switch(char const * long_or_short_form, char const * long_form) {
 			|| long_or_short_form[1] == long_form[2];
 }
 
-void CmdlineBase::add_error(std::string const & msg) {
+void cmdline_base::add_error(std::string const & msg) {
 	if (!errors.empty()) {
 		errors += '\n';
 	}
 	errors += msg;
 }
 
-void CmdlineBase::parse(int argc, char const ** argv) {
+void cmdline_base::parse(int argc, char const ** argv) {
 	program_name = argc > 0 ? argv[0] : get_default_program_name();
 	auto arg = strrchr(program_name, '/');
 	// As long as the program_name doesn't end in a slash, trim
@@ -65,13 +65,13 @@ void CmdlineBase::parse(int argc, char const ** argv) {
 	}
 }
 
-CmdlineBase::CmdlineBase() {
+cmdline_base::cmdline_base() {
 }
 
-CmdlineBase::~CmdlineBase() {
+cmdline_base::~cmdline_base() {
 }
 
-bool CmdlineBase::has_flag(char const * full_name) const {
+bool cmdline_base::has_flag(char const * full_name) const {
 	if (full_name && *full_name == '-') {
 		for (auto flag : flags) {
 			if (matches_switch(flag, full_name)) {
@@ -82,11 +82,11 @@ bool CmdlineBase::has_flag(char const * full_name) const {
 	return false;
 }
 
-CmdlineBase::Options const & CmdlineBase::get_options() const {
+cmdline_base::Options const & cmdline_base::get_options() const {
 	return options;
 }
 
-char const * CmdlineBase::get_option(char const * full_option_name) const {
+char const * cmdline_base::get_option(char const * full_option_name) const {
 	if (full_option_name && *full_option_name == '-') {
 		for (auto Option : options) {
 			if (matches_switch(Option.first, full_option_name)) {
@@ -97,23 +97,23 @@ char const * CmdlineBase::get_option(char const * full_option_name) const {
 	return NULL;
 }
 
-CmdlineBase::Strings const & CmdlineBase::get_positional_args() const {
+cmdline_base::Strings const & cmdline_base::get_positional_args() const {
 	return positional_args;
 }
 
-CmdlineBase::Strings const & CmdlineBase::get_flags() const {
+cmdline_base::Strings const & cmdline_base::get_flags() const {
 	return flags;
 }
 
-std::string const & CmdlineBase::get_errors() const {
+std::string const & cmdline_base::get_errors() const {
 	return errors;
 }
 
-bool CmdlineBase::help_needed() const {
+bool cmdline_base::help_needed() const {
 	return !get_errors().empty() || has_flag("--help");
 }
 
-char const * CmdlineBase::get_program_name() const {
+char const * cmdline_base::get_program_name() const {
 	return program_name;
 }
 

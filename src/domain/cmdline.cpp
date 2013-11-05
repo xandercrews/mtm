@@ -12,19 +12,19 @@
 
 namespace nitro {
 
-char const * Cmdline::get_valid_flags() const {
+char const * cmdline::get_valid_flags() const {
 	return "--help|-h|--follow|-f";
 }
 
-char const * Cmdline::get_valid_options() const {
+char const * cmdline::get_valid_options() const {
 	return "--listenport|-l|--publishport|-p";
 }
 
-char const * Cmdline::get_default_program_name() const {
+char const * cmdline::get_default_program_name() const {
 	return "nitro";
 }
 
-int Cmdline::validate_port(char const * port_switch, int exclusive_port) {
+int cmdline::validate_port(char const * port_switch, int exclusive_port) {
 	auto n = 0;
 	char const * port = get_option(port_switch);
 	if (port) {
@@ -39,21 +39,21 @@ int Cmdline::validate_port(char const * port_switch, int exclusive_port) {
 	return n;
 }
 
-void Cmdline::parse(int argc, char const ** argv) {
-	CmdlineBase::parse(argc, argv);
+void cmdline::parse(int argc, char const ** argv) {
+	cmdline_base::parse(argc, argv);
 	auto n = validate_port("--listenport");
 	validate_port("--publishport", n);
 }
 
-Cmdline::Cmdline(int argc, char const ** argv) {
+cmdline::cmdline(int argc, char const ** argv) {
 	parse(argc, argv);
 }
 
-Cmdline::~Cmdline() {
+cmdline::~cmdline() {
 }
 
 
-std::string Cmdline::get_help() const {
+std::string cmdline::get_help() const {
 	return interp(
 			"%1{errors}\n%2{progname} -- run a batch of similar jobs at high speed\n"
 			"\n"

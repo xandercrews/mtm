@@ -15,8 +15,12 @@ using std::max;
 
 #include "base/interp.h"
 #include "base/error.h"
-#include "base/event.h"
+#include "base/event_ids.h"
+#include "domain/event_ids.h"
 #include "domain/batch.h"
+
+using namespace base::event_ids;
+using namespace nitro::event_ids;
 
 namespace nitro {
 
@@ -50,7 +54,7 @@ const size_t TESTING_GULP_SIZE = 40;
 static char * last_line_break(char * p, char const * begin);
 static bool data_seems_binary(char const * begin, char const * end);
 
-struct Batch::Data {
+struct batch::data_t {
 
 	std::string fname;
 	FILE * f;
@@ -65,7 +69,7 @@ struct Batch::Data {
 	size_t buf_filled_count;
 	size_t gulp_count;
 
-	Data(char const * _fname, size_t gulp_size) :
+	data_t(char const * _fname, size_t gulp_size) :
 		fname(_fname), f(NULL),	flen(0), foffset(0),
 		gulp_size(gulp_size ?
 				(gulp_size == TESTING_GULP_SIZE ?
@@ -83,14 +87,14 @@ struct Batch::Data {
 				gulp();
 			} else {
 				cleanup();
-				throw NITRO_ERROR(NITRO_1FILE_EMPTY, _fname);
+				throw ERROR_EVENT(E_INPUT_FILE_1PATH_EMPTY, _fname);
 			}
 		} else {
-			throw NITRO_ERROR(NITRO_1FILE_UNREADABLE, _fname);
+			throw ERROR_EVENT(E_INPUT_FILE_1PATH_UNREADABLE, _fname);
 		}
 	}
 
-	~Data() {
+	~data_t() {
 		cleanup();
 	}
 
@@ -137,7 +141,7 @@ struct Batch::Data {
 			if (data_seems_binary(buf, buf + min(bytes_read,
 					static_cast<uint64_t>(100)))) {
 				cleanup();
-				throw NITRO_ERROR(NITRO_1FILE_BAD_SEEMS_BINARY, fname);
+				throw ERROR_EVENT(NITRO_1FILE_BAD_SEEMS_BINARY, fname);
 			}
 		}
 
@@ -163,7 +167,7 @@ struct Batch::Data {
 		// Throw an exception instead.
 		if (end == buf) { // file's not exhausted, full buffer had 0 LF
 			cleanup();
-			throw NITRO_ERROR(NITRO_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
+			throw ERROR_EVENT(NITRO_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
 		}
 
 		// Guarantee null termination.
@@ -222,7 +226,7 @@ inline void rtrim_line(char * end) {
 	end[1] = 0;
 }
 
-char const * Batch::next_line() {
+char const * batch::next_line() {
 	if (data->buf) {
 
 		auto end_of_current_gulp = data->buf + data->buf_filled_count;
@@ -255,7 +259,7 @@ char const * Batch::next_line() {
 	return NULL;
 }
 
-double Batch::ratio_complete() const {
+double batch::ratio_complete() const {
 	if (data->flen == 0 || data->buf == NULL) {
 		return 1.0;
 	}
@@ -263,15 +267,15 @@ double Batch::ratio_complete() const {
 			static_cast<double>(data->flen);
 }
 
-Batch::Batch(char const * fname, size_t gulp_size) : data(0) {
+batch::batch(char const * fname, size_t gulp_size) : data(0) {
 	if (fname && *fname) {
-		data = new Data(fname, gulp_size);
+		data = new data_t(fname, gulp_size);
 	} else {
-		throw NITRO_ERROR(NITRO_BAD_FNAME_NULL_OR_EMPTY);
+		throw ERROR_EVENT(E_BAD_FNAME_NULL_OR_EMPTY);
 	}
 }
 
-Batch::~Batch() {
+batch::~batch() {
 	delete data;
 }
 

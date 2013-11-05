@@ -10,10 +10,10 @@ const int DEFAULT_PORT = 47000;
 /**
  * Parses nitro cmdline and provides logic to react.
  */
-class Cmdline : public CmdlineBase {
+class cmdline : public cmdline_base {
 public:
-	Cmdline(int argc, char const ** argv);
-	virtual ~Cmdline();
+	cmdline(int argc, char const ** argv);
+	virtual ~cmdline();
 
 	virtual std::string get_help() const;
 

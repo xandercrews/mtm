@@ -7,11 +7,11 @@ namespace nitro {
  * Does most of the work of the app, and directly or indirectly manages the
  * lifetime of resources such as batches, threads, ports, etc.
  */
-class Engine {
+class engine {
 
 public:
-	Engine();
-	virtual ~Engine();
+	engine();
+	virtual ~engine();
 
 	// These properties can only be changed before the engine begins to run.
 	// As a result, we don't need to synchronize them.

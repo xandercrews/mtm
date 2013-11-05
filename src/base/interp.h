@@ -36,8 +36,8 @@
 // First, make it possible to declare interp-style functions easily, without
 // using C-style varargs in the decl.
 
-#define arg_(n) Arg const & arg##n
-#define oarg_(n) arg_(n) = Arg::Empty
+#define arg_(n) arg const & a##n
+#define oarg_(n) arg_(n) = arg::Empty
 
 /**
  * Use these macros to de-clutter declarations or implementations of interp-
@@ -49,7 +49,8 @@
 #define FOUR_ARGS THREE_ARGS, arg_(4)
 #define MANY_ARGS FOUR_ARGS, oarg_(5), oarg_(6), oarg_(7), oarg_(8), oarg_(9)
 #define MANY_ARGS_IMPL FOUR_ARGS, arg_(5), arg_(6), arg_(7), arg_(8), arg_(9)
-#define MANY_ARGS_LIST arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9
+#define MANY_ARGS_LIST a1, a2, a3, a4, a5, a6, a7, a8, a9
+#define MANY_ARGS_PTR_LIST &a1, &a2, &a3, &a4, &a5, &a6, &a7, &a8, &a9
 #define MANY_OARGS oarg_(1), oarg_(2), oarg_(3), oarg_(4), oarg_(5), oarg_(6),\
 	oarg_(7), oarg_(8), oarg_(9)
 
@@ -101,7 +102,7 @@ inline std::string interp(char const * format) { return format ? format : ""; }
  * end users.
  */
 std::string & interp_into(std::string & txt, char const * format,
-		Arg const * args[], size_t max_argref);
+		arg const * args[], size_t max_argref);
 
 // These lines can be uncommented to test what the macros emit. Write a simple
 // .cpp file that just #includes this .h, then compile it with "gcc -E myfile".

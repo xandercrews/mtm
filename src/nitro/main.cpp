@@ -28,13 +28,13 @@ int main(int argc, char ** argv) {
 
 	try {
 
-		Cmdline cmdline(argc, (char const **)argv);
+		cmdline cmdline(argc, (char const **)argv);
 		if (cmdline.help_needed()) {
 			printf("%s", cmdline.get_help().c_str());
 			return 1;
 		}
 
-		Engine engine;
+		engine engine;
 
 		char const * port = cmdline.get_option("--port");
 		if (port) {

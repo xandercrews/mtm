@@ -16,9 +16,9 @@ namespace nitro {
  *     containers or std::string. The {@link Queue} class is an example of a
  *     consumer of Batch that does mutexing correctly.
  */
-class Batch {
-	struct Data;
-	Data * data;
+class batch {
+	struct data_t;
+	data_t * data;
 
 public:
 	/**
@@ -30,8 +30,8 @@ public:
 	 *     will be adjusted to something reasonable. Ordinary callers can
 	 *     ignore.
 	 */
-	Batch(char const * fname, size_t gulp_size=0);
-	virtual ~Batch();
+	batch(char const * fname, size_t gulp_size=0);
+	virtual ~batch();
 
 	/**
 	 * Return the next non-empty, non-comment line -- or NULL if the batch is

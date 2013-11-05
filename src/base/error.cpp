@@ -6,13 +6,10 @@
 using std::string;
 using std::runtime_error;
 
-namespace nitro {
-
 static std::string make_msg(int eid, char const * source_fname,
 		char const * source_func, unsigned source_line, MANY_ARGS_IMPL) {
 
-	Arg const * args[] = {&arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7,
-			&arg8, &arg9};
+	arg const * args[] = {MANY_ARGS_PTR_LIST};
 
 	if (!source_fname || !*source_fname) {
 		source_fname = "unknown file";
@@ -28,10 +25,10 @@ static std::string make_msg(int eid, char const * source_fname,
 	int extra_count = 0;
 	for (int i = 0; i < 9; ++i) {
 		if (i < arg_count) {
-			if (args[i] == &Arg::Empty) {
+			if (args[i] == &arg::Empty) {
 				++missing_count;
 			}
-		} else if (args[i] != &Arg::Empty) {
+		} else if (args[i] != &arg::Empty) {
 			++extra_count;
 		}
 	}
@@ -47,12 +44,13 @@ static std::string make_msg(int eid, char const * source_fname,
 	}
 #endif
 
-	bool posix = get_component(eid) == kcPOSIX;
+	auto catalog = events::catalog();
+	bool posix = catalog.get_component(eid) == kc_posix;
 	bool interp_args = !posix;
-	// Do some special handling if we try to render an external error.
-	string msg = get_msg(eid);
+	// Do some special handling if we try to render an external error_event.
+	string msg = catalog.get_msg(eid);
 	if (msg.empty()) {
-		msg = "An external codebase returned an error/warning/info without an"
+		msg = "An external codebase returned an error_event/warning/info without an"
 				" associated message.";
 		interp_args = false;
 	}
@@ -63,7 +61,7 @@ static std::string make_msg(int eid, char const * source_fname,
 	} else {
 		int arg_count = 0;
 		for (int i = 0; i < 9; ++i) {
-			if (args[i] != &Arg::Empty) {
+			if (args[i] != &arg::Empty) {
 				if (!arg_count) {
 					msg += " Args: ";
 				} else {
@@ -100,39 +98,38 @@ static std::string make_msg(int eid, char const * source_fname,
 	char fmt[128];
 	sprintf(fmt, "%%1{sev} %s at %%3{fname}, %%4{func}(), line %%5: %%6{msg}",
 			posix ? "%2{number}" : "0x%2{number:%08X}");
-	string label = interp(fmt, get_severity_label(eid), eid, source_fname,
-			source_func, source_line);
+	string label = interp(fmt, catalog.get_severity_label(eid), eid,
+			source_fname, source_func, source_line);
 
 	// Insert label and return.
 	txt.insert(0, label);
 	return txt;
 }
 
-Error::Error(int eid, char const * source_fname, char const * source_func,
-		unsigned source_line, MANY_ARGS_IMPL):
+error_event::error_event(int eid, char const * source_fname,
+		char const * source_func, unsigned source_line, MANY_ARGS_IMPL):
 	runtime_error(make_msg(eid, source_fname, source_func,
 			source_line, MANY_ARGS_LIST)),
 	event_id(eid), source_fname(source_fname ? source_fname : ""),
 	source_func(source_func ? source_func : ""), source_line(source_line) {
 }
 
-Error::~Error() {
+error_event::~error_event() {
 }
 
-int Error::get_event_id() const {
+int error_event::get_event_id() const {
 	return event_id;
 }
 
-char const * Error::get_source_fname() const {
+char const * error_event::get_source_fname() const {
 	return source_fname;
 }
 
-char const * Error::get_source_func() const {
+char const * error_event::get_source_func() const {
 	return source_func;
 }
 
-unsigned Error::get_source_line() const {
+unsigned error_event::get_source_line() const {
 	return source_line;
 }
 
-} /* namespace mtm */

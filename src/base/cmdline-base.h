@@ -8,14 +8,14 @@
 /**
  * Defines an interface for parsing a cmdline and providing logic to react.
  */
-class CmdlineBase {
+class cmdline_base {
 public:
 	typedef std::pair<char const *, char const *> Option;
 	typedef std::vector<Option> Options;
 	typedef std::vector<char const *> Strings;
 
-	CmdlineBase();
-	virtual ~CmdlineBase();
+	cmdline_base();
+	virtual ~cmdline_base();
 
 	Options const & get_options() const;
 	Strings const & get_positional_args() const;
