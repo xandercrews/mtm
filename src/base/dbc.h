@@ -1,7 +1,7 @@
 #ifndef _BASE_DBC_H_
 #define _BASE_DBC_H_
 
-#include "common/error.h"
+#include "base/error.h"
 
 /**
  * Provide support for "design by contract", which allows functions to declare

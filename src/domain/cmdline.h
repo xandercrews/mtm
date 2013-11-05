@@ -22,6 +22,9 @@ protected:
 	virtual void parse(int argc, char const ** argv);
 	virtual char const * get_valid_flags() const;
 	virtual char const * get_valid_options() const;
+
+private:
+	int validate_port(char const * port_switch, int exclusive_port = 0);
 };
 
 } // end namespace nitro

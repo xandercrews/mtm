@@ -13,32 +13,40 @@
 namespace nitro {
 
 char const * Cmdline::get_valid_flags() const {
-	return "--help|-h|--slave|-s";
+	return "--help|-h|--follow|-f";
 }
 
 char const * Cmdline::get_valid_options() const {
-	return "--port|-p";
+	return "--listenport|-l|--publishport|-p";
 }
 
 char const * Cmdline::get_default_program_name() const {
 	return "nitro";
 }
 
-void Cmdline::parse(int argc, char const ** argv) {
-	CmdlineBase::parse(argc, argv);
-	char const * port = get_option("--port");
+int Cmdline::validate_port(char const * port_switch, int exclusive_port) {
+	auto n = 0;
+	char const * port = get_option(port_switch);
 	if (port) {
 		auto end = strchr(port, 0);
 		char * last_digit;
-		auto n = strtol(port, &last_digit, 10);
+		n = strtol(port, &last_digit, 10);
 		if (n < 1024 || n > 65536 || last_digit != end) {
 			add_error(interp("Expected numeric port value > 1024 and < 65536"
-					" after --port, not %1{value}.", port));
+					" after %1{port_switch}, not \"%2{value}\".", port_switch));
 		}
 	}
+	return n;
 }
 
-Cmdline::Cmdline(int argc, char const ** argv) : CmdlineBase(argc, argv) {
+void Cmdline::parse(int argc, char const ** argv) {
+	CmdlineBase::parse(argc, argv);
+	auto n = validate_port("--listenport");
+	validate_port("--publishport", n);
+}
+
+Cmdline::Cmdline(int argc, char const ** argv) {
+	parse(argc, argv);
 }
 
 Cmdline::~Cmdline() {

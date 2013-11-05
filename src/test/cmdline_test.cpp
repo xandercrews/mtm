@@ -23,11 +23,11 @@ TEST(CmdlineTest, help_needed_with_help_explicitly_requested) {
 }
 
 TEST(CmdlineTest, help_needed_with_error) {
-	char const * args[] = {"nitro", "--port"};
+	char const * args[] = {"nitro", "--listenport"};
 	Cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
-	// Should get error about needing an argument for --port.
-	ASSERT_TRUE(strstr(x.get_help().c_str(), "Expected --port to be followed by") != 0);
+	// Should get error about needing an argument for --listenport.
+	ASSERT_TRUE(strstr(x.get_help().c_str(), "Expected --listenport to be followed by") != 0);
 }
 
 TEST(CmdlineTest, bogus_flag) {
@@ -38,14 +38,14 @@ TEST(CmdlineTest, bogus_flag) {
 }
 
 TEST(CmdlineTest, non_numeric_port_error) {
-	char const * args[] = {"nitro", "--port", "abc"};
+	char const * args[] = {"nitro", "--listenport", "abc"};
 	Cmdline x(3, args);
 	// Should get error about numeric port.
 	ASSERT_TRUE(strstr(x.get_errors().c_str(), "Expected numeric port value") != 0);
 }
 
 TEST(CmdlineTest, out_of_range_port_error) {
-	char const * args[] = {"nitro", "--port", "1234567"};
+	char const * args[] = {"nitro", "--publishport", "1234567"};
 	Cmdline x(3, args);
 	// Should get error about value out of range.
 	ASSERT_TRUE(strstr(x.get_errors().c_str(), "6553"/*6 or 5*/) != 0);

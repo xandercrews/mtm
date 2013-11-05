@@ -38,11 +38,11 @@ int main(int argc, char ** argv) {
 
 		char const * port = cmdline.get_option("--port");
 		if (port) {
-			engine.set_port(atoi(port));
+			engine.set_publish_port(atoi(port));
 		}
 
-		if (cmdline.has_flag("--slave")) {
-			engine.set_slave_mode(true);
+		if (cmdline.has_flag("--follow")) {
+			engine.set_follow_mode(true);
 		}
 
 		return engine.run();

@@ -13,9 +13,31 @@ public:
 	Engine();
 	virtual ~Engine();
 
-	void set_port(int port);
-	void set_slave_mode(bool value);
+	// These properties can only be changed before the engine begins to run.
+	// As a result, we don't need to synchronize them.
+
+	void set_publish_port(int port);
+	int get_publish_port() const;
+
+	void set_listen_port(int port);
+	int get_listen_port() const;
+
+	void set_follow_mode(bool value);
+	bool get_follow_mode() const;
+/*
+    - publish port: +range[1025..65535] = 47000
+    - listen port: +range[1025..65535] = 47001
+    - publish queue: mq.connection
+    - listen queue: mq.connection
+    - heartbeats: map of +name to date
+*/
 	int run();
+
+private:
+	int publish_port;
+	int listen_port;
+	bool follow_mode;
+	bool running;
 };
 
 } /* namespace nitro */

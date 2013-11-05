@@ -7,7 +7,7 @@ bool in_alternatives_str(char const * item, char const * alternatives) {
 	if (item && *item && alternatives && *alternatives) {
 		auto substr = strstr(alternatives, item);
 		if (substr && (substr == alternatives || substr[-1] == '|')) {
-			auto ender = alternatives[strlen(item)];
+			auto ender = substr[strlen(item)];
 			return ender == '|' || ender == 0;
 		}
 	}
@@ -57,13 +57,6 @@ void CmdlineBase::parse(int argc, char const ** argv) {
 			if (i >= argc - 1) {
 				add_error(interp("Expected %1 to be followed by a value.", arg));
 			} else {
-				auto value = argv[++i];
-				if (matches_switch(arg, "--port")) {
-					auto n = atoi(value);
-					if (n < 1024 || n > 65536) {
-						add_error(interp("Expected numeric port value > 1024 and < 65536 after %1{arg} -- not %2{value}.", arg, value));
-					}
-				}
 				options.push_back(Option(arg, argv[++i]));
 			}
 		} else {
@@ -72,8 +65,7 @@ void CmdlineBase::parse(int argc, char const ** argv) {
 	}
 }
 
-CmdlineBase::CmdlineBase(int argc, char const ** argv) {
-	parse(argc, argv);
+CmdlineBase::CmdlineBase() {
 }
 
 CmdlineBase::~CmdlineBase() {

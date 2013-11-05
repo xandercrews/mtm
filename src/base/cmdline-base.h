@@ -14,7 +14,7 @@ public:
 	typedef std::vector<Option> Options;
 	typedef std::vector<char const *> Strings;
 
-	CmdlineBase(int argc, char const ** argv);
+	CmdlineBase();
 	virtual ~CmdlineBase();
 
 	Options const & get_options() const;
@@ -60,6 +60,14 @@ public:
 	 */
 	virtual std::string get_help() const = 0;
 
+	/**
+	 * Accept args from main(); decide what they mean. This func should be
+	 * called once per instance. We don't put these parameters in a ctor
+	 * because you shouldn't call a virtual function in a ctor (the vtable is
+	 * not fully built).
+	 */
+	virtual void parse(int argc, char const ** argv);
+
 private:
 	char const * program_name;
 	Options options;
@@ -69,7 +77,6 @@ private:
 
 protected:
 	virtual char const * get_default_program_name() const = 0;
-	virtual void parse(int argc, char const ** argv);
 	void add_error(std::string const & txt);
 };
 
