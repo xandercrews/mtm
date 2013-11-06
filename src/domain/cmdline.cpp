@@ -69,7 +69,7 @@ std::string cmdline::get_help() const {
 		"\n"
 		"    Options:\n"
 		"      --listenport or -l -- Listen on specific port (%3{deflport} is default).\n"
-		"      --talkport or -t   -- Talk on specific port (%3{deftport} is default).\n"
+		"      --talkport or -t   -- Talk on specific port (%4{deftport} is default).\n"
 		"\n",
 		get_errors(), get_program_name(), DEFAULT_LISTEN_PORT, DEFAULT_TALK_PORT
 		);
