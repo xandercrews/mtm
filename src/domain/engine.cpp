@@ -24,8 +24,13 @@ engine::engine(int s_port, int c_port, char const * trans) :
 	zmq_server_socket = zmq_socket(zmq_ctx, ZMQ_REP);
 	int rc = zmq_bind(zmq_server_socket, interp(
 			"%1{transport}://*:%2{port}", transport, server_port).c_str());
-	CHECK(rc == 0);
-	zmq_client_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+	// TODO: use scope guard to clean up here.
+	if (rc) {
+		zmq_ctx_destroy(zmq_ctx);
+		zmq_ctx = 0;
+	} else {
+		zmq_client_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+	}
 }
 
 engine::~engine() {
