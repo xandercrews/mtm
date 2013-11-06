@@ -103,4 +103,14 @@ EVENT(E_ILLEGAL_CALL_IN_STATE_1NAME, error, internal, 12,
 		" that should be reported; its seriousness is unknown.",
 		"")
 
+EVENT(E_CMDLILNE_MISSING_VALUE_FOR_1OPTION, error, user, 13,
+		"domain.base.input",
+		"Expected %1 option to be followed by a value.",
+		"")
+
+EVENT(E_CMDLINE_UNRECOGNIZED_1SWITCH, error, user, 14,
+		"domain.base.input",
+		"%1 looks like a switch of some kind, but is not recognized.",
+		"")
+
 #undef EVENT

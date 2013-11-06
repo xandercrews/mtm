@@ -3,16 +3,15 @@
 
 namespace nitro {
 
-follower_engine::follower_engine(int server_port, int client_port,
-		char const * transport) : engine(server_port, client_port, transport) {
+follower_engine::follower_engine(int passive_port, int active_port) :
+		engine(passive_port, active_port) {
 }
 
 follower_engine::~follower_engine() {
 }
 
-engine_handle follower_engine::make(int server_port, int client_port,
-			char const * transport) {
-	return engine_handle(new follower_engine(server_port, client_port, transport));
+engine_handle follower_engine::make(int passive_port, int active_port) {
+	return engine_handle(new follower_engine(passive_port, active_port));
 }
 
 bool register_follower_engine() {

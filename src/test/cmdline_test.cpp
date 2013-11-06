@@ -11,6 +11,16 @@
 
 using nitro::cmdline;
 
+void expect_errors_contain(cmdline_base::errors_t const & errors, char const * txt) {
+	for (auto e: errors) {
+		if (strstr(e.what(), txt)) {
+			return;
+		}
+	}
+	ADD_FAILURE() << "Expected to see \"" << txt << "\" in a cmdline error ("
+			<< errors.size() << " errors reported).";
+}
+
 TEST(cmdline_test, invalid_ctor_with_no_args) {
 	cmdline x(0, 0);
 	ASSERT_FALSE(x.help_needed());
@@ -24,31 +34,31 @@ TEST(cmdline_test, help_needed_with_help_explicitly_requested) {
 }
 
 TEST(cmdline_test, help_needed_with_error) {
-	char const * args[] = {"nitro", "--listenport"};
+	char const * args[] = {"nitro", "--passiveport"};
 	cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
-	// Should get error about needing an argument for --listenport.
-	expect_str_contains(x.get_help(), "Expected --listenport to be followed by");
+	// Should get error about needing an argument for --passiveport.
+	expect_errors_contain(x.get_errors(), "Expected --passiveport option to be followed by");
 }
 
 TEST(cmdline_test, bogus_flag) {
 	char const * args[] = {"nitro", "--bogus"};
 	cmdline x(2, args);
-	expect_str_contains(x.get_errors(), "--bogus");
+	expect_errors_contain(x.get_errors(), "--bogus");
 }
 
 TEST(cmdline_test, non_numeric_port_error) {
-	char const * args[] = {"nitro", "--listenport", "abc"};
+	char const * args[] = {"nitro", "--passiveport", "abc"};
 	cmdline x(3, args);
 	// Should get error about numeric port.
-	expect_str_contains(x.get_errors(), "Expected numeric port value");
+	expect_errors_contain(x.get_errors(), "Expected numeric port value");
 }
 
 TEST(cmdline_test, out_of_range_port_error) {
-	char const * args[] = {"nitro", "--talkport", "1234567"};
+	char const * args[] = {"nitro", "--activeport", "1234567"};
 	cmdline x(3, args);
 	// Should get error about value out of range.
-	expect_str_contains(x.get_errors(), "6553"/*6 or 5*/);
+	expect_errors_contain(x.get_errors(), "6553"/*6 or 5*/);
 }
 
 TEST(cmdline_test, program_name_from_argv_0) {

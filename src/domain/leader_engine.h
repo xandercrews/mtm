@@ -15,13 +15,12 @@ namespace nitro {
  */
 class leader_engine : public engine {
 
-	leader_engine(int listen_port, int talk_port, char const * transport);
+	leader_engine(int passive_port, int active_port);
 
 public:
 	virtual ~leader_engine();
 
-	static engine_handle make(int listen_port, int talk_port,
-			char const * transport);
+	static engine_handle make(int passive_port, int active_port);
 
 	virtual bool is_follower() const { return false; }
 };

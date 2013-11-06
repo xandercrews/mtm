@@ -3,16 +3,15 @@
 
 namespace nitro {
 
-leader_engine::leader_engine(int server_port, int client_port,
-		char const * transport) : engine(server_port, client_port, transport) {
+leader_engine::leader_engine(int passive_port, int active_port) :
+		engine(passive_port, active_port) {
 }
 
 leader_engine::~leader_engine() {
 }
 
-engine_handle leader_engine::make(int server_port, int client_port,
-			char const * transport) {
-	return engine_handle(new leader_engine(server_port, client_port, transport));
+engine_handle leader_engine::make(int passive_port, int active_port) {
+	return engine_handle(new leader_engine(passive_port, active_port));
 }
 
 bool register_leader_engine() {

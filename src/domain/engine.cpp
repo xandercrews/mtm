@@ -3,6 +3,7 @@
 #include <vector>
 #include <zmq.h>
 
+#include "base/guid.h"
 #include "base/dbc.h"
 #include "base/event_ids.h"
 #include "base/interp.h"
@@ -13,44 +14,52 @@
 
 namespace nitro {
 
-engine::engine(int s_port, int c_port, char const * trans) :
-		server_port(s_port), client_port(c_port), transport(trans), zmq_ctx(0),
-		zmq_server_socket(0), zmq_client_socket(0) {
-	PRECONDITION(server_port > 1024 && server_port < 65536);
-	PRECONDITION(client_port > 1024 && client_port < 65536);
-	PRECONDITION(server_port != client_port);
-	PRECONDITION(trans && *trans);
+engine::engine(int pport, int aport) :
+		passive_port(pport), active_port(aport), zmq_ctx(0),
+		zmq_passive_socket(0), zmq_active_socket(0) {
+	PRECONDITION(passive_port > 1024 && passive_port < 65536);
+	PRECONDITION(active_port > 1024 && active_port < 65536);
+	PRECONDITION(passive_port != active_port);
+	{
+		char buf[GUID_BUF_LEN];
+		generate_guid(buf, sizeof(buf));
+		id = buf;
+	}
 	zmq_ctx = zmq_ctx_new();
-	zmq_server_socket = zmq_socket(zmq_ctx, ZMQ_REP);
-	int rc = zmq_bind(zmq_server_socket, interp(
-			"%1{transport}://*:%2{port}", transport, server_port).c_str());
+	zmq_passive_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+	int rc = zmq_bind(zmq_passive_socket, interp(
+			"tcp://*:%1{port}", passive_port).c_str());
 	// TODO: use scope guard to clean up here.
 	if (rc) {
 		zmq_ctx_destroy(zmq_ctx);
 		zmq_ctx = 0;
 	} else {
-		zmq_client_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+		zmq_active_socket = zmq_socket(zmq_ctx, ZMQ_REP);
 	}
 }
 
 engine::~engine() {
-	if (zmq_client_socket) {
-		zmq_close(zmq_client_socket);
+	if (zmq_active_socket) {
+		zmq_close(zmq_active_socket);
 	}
-	if (zmq_server_socket) {
-		zmq_close(zmq_server_socket);
+	if (zmq_passive_socket) {
+		zmq_close(zmq_passive_socket);
 	}
 	if (zmq_ctx) {
 		zmq_ctx_destroy(zmq_ctx);
 	}
 }
 
-int engine::get_server_port() const {
-	return server_port;
+char const * engine::get_id() const {
+	return id.c_str();
 }
 
-int engine::get_client_port() const {
-	return client_port;
+int engine::get_passive_port() const {
+	return passive_port;
+}
+
+int engine::get_active_port() const {
+	return active_port;
 }
 
 void engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
@@ -72,7 +81,7 @@ void send_progress_report_thread_main() {
 int engine::run() {
 
 #if 0
-	start listening on listen_port
+	start listening on passive_port
 
 	    If I get a json msg where the event code == NITRO_PING_REQUEST,
 	    ... call handle_ping_request(). (see base/event_tuples.h to see how
@@ -132,14 +141,13 @@ engine_factory::~engine_factory() {
 
 engine_handle engine_factory::make(cmdline const & cmdline, char const * tag)
 		const {
-	bool follow_mode = cmdline.has_flag("--follow");
-	int listen_port = cmdline.get_option_as_int("--listenport", DEFAULT_LISTEN_PORT);
-	int talk_port = cmdline.get_option_as_int("--talkport", DEFAULT_TALK_PORT);
-	char const * transport = "tcp"; //TODO: figure out a better way
+	bool follow_mode = cmdline.get_option("--leader") != NULL;
+	int passive_port = cmdline.get_option_as_int("--listenport", DEFAULT_PASSIVE_PORT);
+	int active_port = cmdline.get_option_as_int("--talkport", DEFAULT_ACTIVE_PORT);
 	for (auto i: data->infos) {
 		if (i.follow_mode == follow_mode) {
 			if (tag == NULL || *tag == 0 || i.tag == tag) {
-				return i.ctor(listen_port, talk_port, transport);
+				return i.ctor(passive_port, active_port);
 			}
 		}
 	}

@@ -24,6 +24,18 @@ EVENT(NITRO_1FILE_BAD_SEEMS_BINARY, error, user, 2,
 		"Input file %1{fname} seems to be binary. The batch must be abandoned.",
 		"")
 
+EVENT(NITRO_EXPECTED_PORT_NUM_AFTER_1SWITCH_NOT_2VAL, error, user, 3,
+		"domain.nitro.input",
+		"Expected numeric port value > 1024 and < 65536 after %1{port_switch},"
+		" not \"%2{value}\".",
+		"")
+
+EVENT(NITRO_EXPECTED_UNIQUE_1SWITCH_BUT_2NUM_REUSED, error, user, 4,
+		"domain.nitro.input",
+		"Expected %1{port_switch} to get a unique value, but port %2{value} is"
+		" re-used.",
+		"")
+
 EVENT(NITRO_HERE_IS_ASSIGNMENT, info, internal, 100,
 		"domain.nitro.internal",
 		"Here is an assignment of a few new commands to run.",

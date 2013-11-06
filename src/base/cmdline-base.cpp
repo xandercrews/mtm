@@ -2,6 +2,9 @@
 
 #include "base/cmdline-base.h"
 #include "base/interp.h"
+#include "base/event_ids.h"
+
+using namespace base::event_ids;
 
 bool in_alternatives_str(char const * item, char const * alternatives) {
 	if (item && *item && alternatives && *alternatives) {
@@ -34,11 +37,8 @@ bool matches_switch(char const * long_or_short_form, char const * long_form) {
 			|| long_or_short_form[1] == long_form[2]);
 }
 
-void cmdline_base::add_error(std::string const & msg) {
-	if (!errors.empty()) {
-		errors += '\n';
-	}
-	errors += msg;
+void cmdline_base::add_error(error_event const & err) {
+	errors.push_back(err);
 }
 
 void cmdline_base::parse(int argc, char const ** argv) {
@@ -55,14 +55,15 @@ void cmdline_base::parse(int argc, char const ** argv) {
 			flags.push_back(arg);
 		} else if (is_option(arg)) {
 			if (i >= argc - 1) {
-				add_error(interp("Expected %1 to be followed by a value.", arg));
+				add_error(ERROR_EVENT(
+						E_CMDLILNE_MISSING_VALUE_FOR_1OPTION, arg));
 			} else {
-				options.push_back(Option(arg, argv[++i]));
+				options.push_back(option_t(arg, argv[++i]));
 			}
 		} else {
 			if (arg[0] == '-') {
-				add_error(interp("%1 looks like a switch of some kind, but is"
-						" not recognized.", arg));
+				add_error(ERROR_EVENT(
+						E_CMDLINE_UNRECOGNIZED_1SWITCH, arg));
 			} else {
 				positional_args.push_back(arg);
 			}
@@ -87,7 +88,7 @@ bool cmdline_base::has_flag(char const * full_name) const {
 	return false;
 }
 
-cmdline_base::Options const & cmdline_base::get_options() const {
+cmdline_base::options_t const & cmdline_base::get_options() const {
 	return options;
 }
 
@@ -116,15 +117,15 @@ int cmdline_base::get_option_as_int(char const * full_option_name, int bad)
 	return bad;
 }
 
-cmdline_base::Strings const & cmdline_base::get_positional_args() const {
+cmdline_base::strings_t const & cmdline_base::get_positional_args() const {
 	return positional_args;
 }
 
-cmdline_base::Strings const & cmdline_base::get_flags() const {
+cmdline_base::strings_t const & cmdline_base::get_flags() const {
 	return flags;
 }
 
-std::string const & cmdline_base::get_errors() const {
+cmdline_base::errors_t const & cmdline_base::get_errors() const {
 	return errors;
 }
 

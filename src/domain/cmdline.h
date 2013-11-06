@@ -5,8 +5,8 @@
 
 namespace nitro {
 
-const int DEFAULT_LISTEN_PORT = 47000;
-const int DEFAULT_TALK_PORT = 47001;
+const int DEFAULT_PASSIVE_PORT = 47000;
+const int DEFAULT_ACTIVE_PORT = 47001;
 
 /**
  * Parses nitro cmdline and provides logic to react.

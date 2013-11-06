@@ -4,23 +4,25 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include "base/error.h"
 
 /**
  * Defines an interface for parsing a cmdline and providing logic to react.
  */
 class cmdline_base {
 public:
-	typedef std::pair<char const *, char const *> Option;
-	typedef std::vector<Option> Options;
-	typedef std::vector<char const *> Strings;
+	typedef std::pair<char const *, char const *> option_t;
+	typedef std::vector<option_t> options_t;
+	typedef std::vector<char const *> strings_t;
+	typedef std::vector<error_event> errors_t;
 
 	cmdline_base();
 	virtual ~cmdline_base();
 
-	Options const & get_options() const;
-	Strings const & get_positional_args() const;
-	Strings const & get_flags() const;
-	std::string const & get_errors() const;
+	options_t const & get_options() const;
+	strings_t const & get_positional_args() const;
+	strings_t const & get_flags() const;
+	errors_t const & get_errors() const;
 
 	bool is_flag(char const * arg) const;
 	bool is_option(char const * arg) const;
@@ -77,14 +79,15 @@ public:
 
 private:
 	char const * program_name;
-	Options options;
-	Strings positional_args;
-	Strings flags;
-	std::string errors;
+	options_t options;
+	strings_t positional_args;
+	strings_t flags;
+	errors_t errors;
 
 protected:
 	virtual char const * get_default_program_name() const = 0;
-	void add_error(std::string const & txt);
+
+	void add_error(error_event const & err);
 };
 
 /**
