@@ -60,7 +60,12 @@ void cmdline_base::parse(int argc, char const ** argv) {
 				options.push_back(Option(arg, argv[++i]));
 			}
 		} else {
-			positional_args.push_back(arg);
+			if (arg[0] == '-') {
+				add_error(interp("%1 looks like a switch of some kind, but is"
+						" not recognized.", arg));
+			} else {
+				positional_args.push_back(arg);
+			}
 		}
 	}
 }
@@ -95,6 +100,20 @@ char const * cmdline_base::get_option(char const * full_option_name) const {
 		}
 	}
 	return NULL;
+}
+
+int cmdline_base::get_option_as_int(char const * full_option_name, int bad)
+		const {
+	auto val = get_option(full_option_name);
+	if (val) {
+		char * last_digit;
+		auto end = strchr(val, 0);
+		int n = strtol(val, &last_digit, 10);
+		if (last_digit == end) {
+			return n;
+		}
+	}
+	return bad;
 }
 
 cmdline_base::Strings const & cmdline_base::get_positional_args() const {

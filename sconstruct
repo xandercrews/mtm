@@ -2,7 +2,7 @@
 # to src. Don't define other include paths. This keeps includes exceedingly clean and
 # regular, and it makes includes unambiguous instead of mysterious.
 # Also, force all builds to be done with C++ 11 syntax and libraries.
-env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include'], CXXFLAGS='-std=c++0x')
+env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zmq/include'], CXXFLAGS='-std=c++0x')
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
@@ -19,6 +19,9 @@ if not GetOption('verbose'):
 # using a double when a float might suffice. That only matters with 32-bit
 # CPUs.) This list is close to the combination of -Wall and -Wextra, but not
 # identical.
+#
+# This is not a waste of time! As soon as I turned these warnings on I found
+# 2 or 3 bugs.
 warnings = '''
 -Waddress
 -Warray-bounds  
@@ -79,6 +82,10 @@ Export('base')
 # Build jsoncpp.
 jsoncpp = SConscript('src/jsoncpp/sconscript', variant_dir='build/jsoncpp', duplicate=0)
 Export('jsoncpp')
+
+# Build zeromq.
+zmq = SConscript('src/zeromq/sconscript', variant_dir='build/zeromq', duplicate=0)
+Export('zmq')
 
 # Build the domain library for nitro.
 domain = SConscript('src/domain/sconscript', variant_dir='build/domain', duplicate=0)

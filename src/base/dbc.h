@@ -34,7 +34,7 @@
  * function, such as requiring that a pointer not be NULL. Declare them at the
  * top of the code block of the called function.
  */
-#define PRECONDITION(expr) if (!expr) \
+#define PRECONDITION(expr) if (!(expr)) \
 	CONTRACT_VIOLATION_ACTION(\
 			base::event_ids::E_PRECONDITION_1EXPR_VIOLATED, #expr)
 
@@ -42,7 +42,7 @@
  * A check is a way for paranoid callers to verify the behavior of called
  * functions. Declare them right after a function call that you don't trust.
  */
-#define CHECK(expr) if (!expr) \
+#define CHECK(expr) if (!(expr)) \
 	CONTRACT_VIOLATION_ACTION(\
 			base::event_ids::E_CHECK_1EXPR_VIOLATED, #expr)
 
@@ -56,7 +56,7 @@
  * from a function short-circuiting your enforcement. See
  * http://codecraft.co/2013/10/31/why-we-need-try-finally-not-just-raii/.
  */
-#define POSTCONDITION(expr) if (!expr) \
+#define POSTCONDITION(expr) if (!(expr)) \
 	CONTRACT_VIOLATION_ACTION(\
 			base::event_ids::E_POSTCONDITION_1EXPR_VIOLATED, #expr)
 

@@ -41,6 +41,13 @@ public:
 	 */
 
 	char const * get_option(char const * full_option_name) const;
+
+	/**
+	 * A convenience method that looks for an option with the specified name.
+	 * If found, return its value as an int. If not, return bad.
+	 */
+	int get_option_as_int(char const * full_option_name, int bad=-1) const;
+
 	/**
 	 * Return true if a flag is present.
 	 *

@@ -7,6 +7,7 @@
 
 #include "domain/cmdline.h"
 #include "gtest/gtest.h"
+#include "test/test_util.h"
 
 using nitro::cmdline;
 
@@ -27,28 +28,27 @@ TEST(cmdline_test, help_needed_with_error) {
 	cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
 	// Should get error about needing an argument for --listenport.
-	ASSERT_TRUE(strstr(x.get_help().c_str(), "Expected --listenport to be followed by") != 0);
+	expect_str_contains(x.get_help(), "Expected --listenport to be followed by");
 }
 
 TEST(cmdline_test, bogus_flag) {
 	char const * args[] = {"nitro", "--bogus"};
 	cmdline x(2, args);
-	ASSERT_TRUE(x.get_errors().empty());
-	EXPECT_STREQ("--bogus", x.get_positional_args()[0]);
+	expect_str_contains(x.get_errors(), "--bogus");
 }
 
 TEST(cmdline_test, non_numeric_port_error) {
 	char const * args[] = {"nitro", "--listenport", "abc"};
 	cmdline x(3, args);
 	// Should get error about numeric port.
-	ASSERT_TRUE(strstr(x.get_errors().c_str(), "Expected numeric port value") != 0);
+	expect_str_contains(x.get_errors(), "Expected numeric port value");
 }
 
 TEST(cmdline_test, out_of_range_port_error) {
-	char const * args[] = {"nitro", "--publishport", "1234567"};
+	char const * args[] = {"nitro", "--talkport", "1234567"};
 	cmdline x(3, args);
 	// Should get error about value out of range.
-	ASSERT_TRUE(strstr(x.get_errors().c_str(), "6553"/*6 or 5*/) != 0);
+	expect_str_contains(x.get_errors(), "6553"/*6 or 5*/);
 }
 
 TEST(cmdline_test, program_name_from_argv_0) {

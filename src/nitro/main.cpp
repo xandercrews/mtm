@@ -34,18 +34,11 @@ int main(int argc, char ** argv) {
 			return 1;
 		}
 
-		engine engine;
-
-		char const * port = cmdline.get_option("--port");
-		if (port) {
-			engine.set_publish_port(atoi(port));
-		}
-
-		if (cmdline.has_flag("--follow")) {
-			engine.set_follow_mode(true);
-		}
-
-		return engine.run();
+		// Build whatever type of engine we need for this commandline, and then
+		// run it.
+		engine_factory const & factory = engine_factory::singleton();
+		engine_handle engine = factory.make(cmdline);
+		return engine->run();
 
 	} catch (std::exception const & e) {
 		printf("Fatal error: %s\n", e.what());

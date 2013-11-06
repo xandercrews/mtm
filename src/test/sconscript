@@ -1,6 +1,8 @@
 Import('env')
 Import('base')
 Import('domain')
+Import('jsoncpp')
+Import('zmq')
 
 # Create an independent environment to run tests, so we don't
 # propagate any changes back to the master env.
@@ -30,6 +32,6 @@ gtest = SConscript('gmock/gtest/src/sconscript', variant_dir='build/gtest', dupl
 gmock = SConscript('gmock/src/sconscript', variant_dir='build/gmock', duplicate=0)
 
 testrunner = test_env.Program(target='nitro-testrunner', source=sources, 
-    LIBS=[base, domain, gmock, gtest, 'pthread'])
+    LIBS=[base, domain, jsoncpp, zmq, gmock, gtest, 'pthread'])
 
 Return('testrunner')

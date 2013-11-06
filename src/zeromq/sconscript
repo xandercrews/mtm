@@ -1,0 +1,12 @@
+import os
+
+Import('env')
+
+def run_here(cmd):
+	return 'pushd .; cd src/zeromq; %s; popd' % cmd
+
+# Hack to do an autotools build of zmq as part of our scons build
+zmq = env.Command('#build/zeromq/libzmq.a', '', 
+	'python src/zeromq/build_as_needed.py')
+
+Return('zmq')

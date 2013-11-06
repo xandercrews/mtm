@@ -26,20 +26,22 @@ b. Prefer C++ 11 headers and mechanisms.
    our team with respect to C++. (There are a few exceptions; std streams and
    locales have never been widely accepted, so a good old FILE * is fine...)
    
-c. With great discipline, use std::unique_ptr and scope_guard to implement RAII.  
+c. Don't relax warnings, and don't check in code that compiles with warnings.
+   
+d. Use std::unique_ptr and scope_guard to implement RAII. 
 
-d. Use #includes that are relative to the ./src folder. This makes it very
+e. Use #includes that are relative to the ./src folder. This makes it very
    clear where a particular file comes from, and how internal packages depend
    on one another.
    
-e. Prefer static linking.
+f. Prefer static linking.
    
-f. Avoid pre/suffixes that just clutter the code without a meaningful increase
+g. Avoid pre/suffixes that just clutter the code without a meaningful increase
    in the semantic payload of a name. (The *_t suffix is an exception; we use
    it for classes and enums that just hold data, so that we can have variables
    that use the same name without the suffix.) 
    
-g. Maintain conventions on capitalization, indenting, and naming that are
+h. Maintain conventions on capitalization, indenting, and naming that are
    already active in the codebase. These conventions reflect the way the STL
    is named, formatted, and written.
    
