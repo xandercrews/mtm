@@ -1,25 +1,14 @@
-/*
- * batch_test.cpp
- *
- *  Created on: Oct 25, 2013
- *      Author: dhardman
- */
-
-#include <stdlib.h>
-
-#include "gtest/gtest.h"
 #include "base/error.h"
 #include "base/event_ids.h"
-#include "domain/batch.h"
-#include "domain/event_ids.h"
+#include "base/file_lines.h"
 
-using namespace nitro;
-using namespace nitro::event_ids;
+#include "gtest/gtest.h"
+
 using namespace base::event_ids;
 
 TEST(batch_test, nonexistent_file) {
 	try {
-		batch b("doesn't@exist");
+		file_lines fl("doesn't@exist");
 		ADD_FAILURE() << "Expected error_event about unavailable file.";
 	} catch (error_event const & e) {
 		ASSERT_EQ(e.get_event_id(), E_INPUT_FILE_1PATH_UNREADABLE);
@@ -28,16 +17,16 @@ TEST(batch_test, nonexistent_file) {
 
 TEST(batch_test, readable_binary_file) {
 	try {
-		batch b("/usr/bin/ls");
+		file_lines fl("/usr/bin/ls");
 		ADD_FAILURE() << "Expected error_event about binary file.";
 	} catch (error_event const & e) {
-		ASSERT_EQ(e.get_event_id(), NITRO_1FILE_BAD_SEEMS_BINARY);
+		ASSERT_EQ(e.get_event_id(), E_1FILE_BAD_SEEMS_BINARY);
 	}
 }
 
 TEST(batch_test, empty_existing_file) {
 	try {
-		batch b("/tmp/");
+		file_lines fl("/tmp/");
 		ADD_FAILURE() << "Expected error_event about unreadable file.";
 	} catch (error_event const & e) {
 		ASSERT_EQ(e.get_event_id(), E_INPUT_FILE_1PATH_EMPTY);
@@ -92,10 +81,10 @@ TEST(batch_test, text_file) {
 
 	// Now see if we get exactly 4 identical lines. (The 5th line that we wrote
 	// was preceded by a comment and should be skipped.)
-	batch b(fc.fname.c_str());
+	file_lines fl(fc.fname.c_str());
 	for (int i = 0; i < 4; ++i) {
-		char const * line = b.next_line();
+		char const * line = fl.next();
 		ASSERT_STREQ(LINE, line);
 	}
-	ASSERT_STREQ(NULL, b.next_line());
+	ASSERT_STREQ(NULL, fl.next());
 }

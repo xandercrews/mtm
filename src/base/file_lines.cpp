@@ -1,14 +1,8 @@
-/*
- * batch.cpp
- *
- *  Created on: Oct 25, 2013
- *      Author: dhardman
- */
-
-#include <stdexcept>
-#include <cstdint>
 #include <algorithm>
+#include <cstdint>
+#include <stdexcept>
 #include <stdio.h>
+#include <string.h>
 
 using std::min;
 using std::max;
@@ -16,16 +10,12 @@ using std::max;
 #include "base/interp.h"
 #include "base/error.h"
 #include "base/event_ids.h"
-#include "domain/event_ids.h"
-#include "domain/batch.h"
+#include "base/file_lines.h"
 
 using namespace base::event_ids;
-using namespace nitro::event_ids;
-
-namespace nitro {
 
 /**
- * How much will we read from a batch file at any given time?
+ * How much will we read from a file_lines file at any given time?
  *
  * Don't set this too high -- we want to be able to run multiple batches in
  * parallel, so we may have multiples of this class active at the same time.
@@ -36,7 +26,7 @@ namespace nitro {
  * them just shifts the burden of managing head movement and caching back to
  * the kernel and network I/O layers, without changing the speed, and with
  * significant increases in RAM requirements. Since we have to handle chunking
- * inside our code anyway (to cope with batch file sizes in the tens or
+ * inside our code anyway (to cope with file_lines file sizes in the tens or
  * hundreds of gigabytes), the tradeoff doesn't make sense.
  */
 const size_t MAX_GULP_SIZE = 1024 * 1024;
@@ -54,7 +44,7 @@ const size_t TESTING_GULP_SIZE = 40;
 static char * last_line_break(char * p, char const * begin);
 static bool data_seems_binary(char const * begin, char const * end);
 
-struct batch::data_t {
+struct file_lines::data_t {
 
 	std::string fname;
 	FILE * f;
@@ -141,7 +131,7 @@ struct batch::data_t {
 			if (data_seems_binary(buf, buf + min(bytes_read,
 					static_cast<uint64_t>(100)))) {
 				cleanup();
-				throw ERROR_EVENT(NITRO_1FILE_BAD_SEEMS_BINARY, fname);
+				throw ERROR_EVENT(E_1FILE_BAD_SEEMS_BINARY, fname);
 			}
 		}
 
@@ -167,7 +157,7 @@ struct batch::data_t {
 		// Throw an exception instead.
 		if (end == buf) { // file's not exhausted, full buffer had 0 LF
 			cleanup();
-			throw ERROR_EVENT(NITRO_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
+			throw ERROR_EVENT(E_1FILE_BAD_HUGE_LINE_2BYTES, fname, bytes_read);
 		}
 
 		// Guarantee null termination.
@@ -182,7 +172,7 @@ struct batch::data_t {
 			}
 		} else {
 			// Close file handle immediately rather than keeping it open
-			// while we process the final lines of the batch. This is not
+			// while we process the final lines of the file_lines. This is not
 			// the same as calling cleanup() -- we still want the data that's
 			// in buf...
 			fclose(f);
@@ -226,7 +216,7 @@ inline void rtrim_line(char * end) {
 	end[1] = 0;
 }
 
-char const * batch::next_line() {
+char const * file_lines::next() {
 	if (data->buf) {
 
 		auto end_of_current_gulp = data->buf + data->buf_filled_count;
@@ -259,7 +249,7 @@ char const * batch::next_line() {
 	return NULL;
 }
 
-double batch::ratio_complete() const {
+double file_lines::ratio_complete() const {
 	if (data->flen == 0 || data->buf == NULL) {
 		return 1.0;
 	}
@@ -267,7 +257,7 @@ double batch::ratio_complete() const {
 			static_cast<double>(data->flen);
 }
 
-batch::batch(char const * fname, size_t gulp_size) : data(0) {
+file_lines::file_lines(char const * fname, size_t gulp_size) : data(0) {
 	if (fname && *fname) {
 		data = new data_t(fname, gulp_size);
 	} else {
@@ -275,7 +265,7 @@ batch::batch(char const * fname, size_t gulp_size) : data(0) {
 	}
 }
 
-batch::~batch() {
+file_lines::~file_lines() {
 	delete data;
 }
 
@@ -301,4 +291,4 @@ char * last_line_break(char * p, char const * begin) {
 	return p;
 }
 
-} /* namespace mtm */
+

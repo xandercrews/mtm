@@ -16,7 +16,7 @@ using namespace nitro;
 
 engine_handle make_coord_engine(char const ** args = NULL, int argc = 0) {
 	char const * def_args[] = {"progname", "--replyport", "52500",
-			"--publishport", "52501"};
+			"--publishport", "52501", "--exechost", "localhost"};
 	if (!args) {
 		args = def_args;
 		argc = 5;
@@ -57,13 +57,15 @@ TEST(engine_test, worker_ctor_works) {
 }
 
 TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
-	auto manager = make_coord_engine();
-	ASSERT_TRUE(static_cast<bool>(manager));
+	auto coord = make_coord_engine();
+	ASSERT_TRUE(static_cast<bool>(coord));
 	auto worker = make_worker_engine();
 	ASSERT_TRUE(static_cast<bool>(worker));
 }
 
 TEST(engine_test, complete_batch_lifecycle) {
+	auto coord = make_coord_engine();
+	auto worker = make_worker_engine();
 
 }
 

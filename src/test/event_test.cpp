@@ -168,7 +168,7 @@ TEST(event_test, known_event_properties) {
 }
 
 TEST(event_test, multi_arg_count) {
-	auto e = nitro::event_ids::NITRO_1FILE_BAD_HUGE_LINE_2BYTES;
+	auto e = base::event_ids::E_1FILE_BAD_HUGE_LINE_2BYTES;
 	EXPECT_EQ(2, catalog.get_arg_count(e));
 }
 

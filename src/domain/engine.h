@@ -20,7 +20,7 @@ class cmdline;
  */
 class engine {
 public:
-	engine(int reply_port, int publish_port);
+	engine(cmdline const &);
 	virtual ~engine();
 
 	int run();

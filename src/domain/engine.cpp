@@ -16,9 +16,11 @@
 
 namespace nitro {
 
-engine::engine(int pport, int aport) :
-		reply_port(pport), publish_port(aport), zmq_ctx(0),
+engine::engine(cmdline const & cmdline) :
+		reply_port(0), publish_port(0), zmq_ctx(0),
 		zmq_passive_socket(0), zmq_active_socket(0) {
+	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
+	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
 	PRECONDITION(publish_port > 1024 && publish_port < 65536);
 	PRECONDITION(reply_port != publish_port);
@@ -119,12 +121,10 @@ int engine::run() {
 
 engine_handle make_engine(cmdline const & cmdline) {
 	bool worker_mode = cmdline.get_option("--workfor") != NULL;
-	int reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
-	int publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
 	if (worker_mode) {
-		return engine_handle(new worker_engine(reply_port, publish_port));
+		return engine_handle(new worker_engine(cmdline));
 	} else {
-		return engine_handle(new coord_engine(reply_port, publish_port));
+		return engine_handle(new coord_engine(cmdline));
 	}
 }
 

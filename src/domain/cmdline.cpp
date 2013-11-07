@@ -29,7 +29,7 @@ char const * cmdline::get_valid_flags() const {
  * For the time being, this is as far as I got.
  */
 char const * cmdline::get_valid_options() const {
-	return "--replyport|-r|--publishport|-p|--workfor|-w";
+	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e";
 }
 
 char const * cmdline::get_default_program_name() const {

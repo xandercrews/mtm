@@ -113,4 +113,17 @@ EVENT(E_CMDLINE_UNRECOGNIZED_1SWITCH, error, user, 14,
 		"%1 looks like a switch of some kind, but is not recognized.",
 		"")
 
+EVENT(E_1FILE_BAD_HUGE_LINE_2BYTES, error, user, 15,
+		"domain.base.input",
+		"Input file %1{fname} is malformed because it contains a single line of"
+		" text that's at least %2{bytes_read} bytes long. It cannot be"
+		" processed line-by-line.",
+		"")
+
+EVENT(E_1FILE_BAD_SEEMS_BINARY, error, user, 16,
+		"domain.base.input",
+		"Input file %1{fname} seems to be binary; it cannot be processed"
+		" line-by-line.",
+		"")
+
 #undef EVENT

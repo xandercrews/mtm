@@ -1,5 +1,5 @@
-#ifndef _DOMAIN_FOLLOWER_ENGINE_H_
-#define _DOMAIN_FOLLOWER_ENGINE_H_
+#ifndef _DOMAIN_WORKER_ENGINE_H_
+#define _DOMAIN_WORKER_ENGINE_H_
 
 #include "domain/engine.h"
 
@@ -11,7 +11,7 @@ namespace nitro {
  */
 class worker_engine : public engine {
 public:
-	worker_engine(int reply_port, int publish_port);
+	worker_engine(cmdline const & cmdline);
 	virtual ~worker_engine();
 };
 

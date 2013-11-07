@@ -1,6 +1,8 @@
 #ifndef _DOMAIN_LEADER_ENGINE_H_
 #define _DOMAIN_LEADER_ENGINE_H_
 
+#include <vector>
+
 #include "domain/engine.h"
 
 namespace nitro {
@@ -11,8 +13,14 @@ namespace nitro {
  */
 class coord_engine : public engine {
 public:
-	coord_engine(int reply_port, int publish_port);
+	coord_engine(cmdline const &);
 	virtual ~coord_engine();
+
+	typedef std::vector<std::string> hostlist_t;
+	hostlist_t const & get_hostlist() const;
+
+private:
+	hostlist_t hostlist;
 };
 
 } // end namespace nitro

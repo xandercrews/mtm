@@ -12,25 +12,13 @@
 // msg: [associated message that is shown, with interp-style substitution]
 // comments: [description used for documentation/explanation purposes]
 
-EVENT(NITRO_1FILE_BAD_HUGE_LINE_2BYTES, error, user, 1,
-		"domain.nitro.input",
-		"Input file %1{fname} is malformed because it contains a single line of"
-		" text that's at least %2{bytes_read} bytes long. The batch must be"
-		" abandoned.",
-		"")
-
-EVENT(NITRO_1FILE_BAD_SEEMS_BINARY, error, user, 2,
-		"domain.nitro.input",
-		"Input file %1{fname} seems to be binary. The batch must be abandoned.",
-		"")
-
-EVENT(NITRO_EXPECTED_PORT_NUM_AFTER_1SWITCH_NOT_2VAL, error, user, 3,
+EVENT(NITRO_EXPECTED_PORT_NUM_AFTER_1SWITCH_NOT_2VAL, error, user, 1,
 		"domain.nitro.input",
 		"Expected numeric port value > 1024 and < 65536 after %1{port_switch},"
 		" not \"%2{value}\".",
 		"")
 
-EVENT(NITRO_EXPECTED_UNIQUE_1SWITCH_BUT_2NUM_REUSED, error, user, 4,
+EVENT(NITRO_EXPECTED_UNIQUE_1SWITCH_BUT_2NUM_REUSED, error, user, 2,
 		"domain.nitro.input",
 		"Expected %1{port_switch} to get a unique value, but port %2{value} is"
 		" re-used.",
