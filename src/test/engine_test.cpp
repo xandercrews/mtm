@@ -3,9 +3,12 @@
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
 #include "domain/engine.h"
+#include "domain/msg.h"
 #include "domain/worker_engine.h"
 
 #include "gtest/gtest.h"
+
+#include "test/test_util.h"
 
 #include "zeromq/include/zmq.hpp"
 
@@ -43,14 +46,16 @@ engine::handle make_worker_engine(char const ** args = NULL, int argc = 0) {
 	return make_engine(cmdline);
 }
 
-TEST(engine_test, manager_ctor_works) {
+TEST(engine_test, coord_ctor_works) {
 	auto engine = make_coord_engine();
-	ASSERT_TRUE(dynamic_cast<coord_engine *>(engine.get()) != NULL);
+	auto ptr = dynamic_cast<coord_engine *>(engine.get());
+	ASSERT_TRUE(ptr != NULL);
 }
 
 TEST(engine_test, worker_ctor_works) {
 	auto engine = make_worker_engine();
-	ASSERT_TRUE(dynamic_cast<worker_engine *>(engine.get()) != NULL);
+	auto ptr = dynamic_cast<worker_engine *>(engine.get());
+	ASSERT_TRUE(ptr != NULL);
 }
 
 TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
@@ -63,21 +68,18 @@ TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
 
 void coord_listener_thread_main(coord_engine const & coord,
-		std::vector<std::string> & msgs) {
+		std::vector<std::string> & ) {
 
 	try {
-	    void *context = coord.ctx; //zmq_ctx_new ();
-	    void *subscriber = zmq_socket (context, ZMQ_SUB);
+	    void *context = coord.ctx;
+	    void *subscriber = zmq_socket(context, ZMQ_SUB);
 	    int rc;
-	    tryz(zmq_connect(subscriber, coord.get_inproc_endpoint()));
+	    tryz(zmq_connect(subscriber, coord.get_subscribe_endpoint("inproc")));
 	    tryz(zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, "", 0));
 
-	    //  Process 100 updates
-	    int update_nbr;
-	    for (update_nbr = 0; update_nbr < 5; update_nbr++) {
-	    	char buf[20];
-	        zmq_recv(subscriber, buf, 20, 0);
-	        fprintf(stderr, "%s\n", buf);
+	    for (int i = 0; i < 5; ++i) {
+	    	auto txt = receive_full_msg(subscriber);
+	        fprintf(stderr, "%s\n", txt.c_str());
 	    }
 	    zmq_close(subscriber);
 	} catch (std::exception const & e) {
@@ -85,6 +87,7 @@ void coord_listener_thread_main(coord_engine const & coord,
 	}
 }
 
+#if 0
 TEST(engine_test, complete_batch_lifecycle) {
 	auto coord = make_coord_engine();
 	std::vector<std::string> msgs;
@@ -95,4 +98,4 @@ TEST(engine_test, complete_batch_lifecycle) {
 			std::ref(msgs));
 	coord->run();
 }
-
+#endif

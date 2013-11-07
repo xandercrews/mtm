@@ -109,30 +109,30 @@ public:
 	/**
 	 * @return the {@link Severity} for a particular event.
 	 */
-	severity_t get_severity(int eid) const;
+	static severity_t get_severity(int eid);
 
 	/**
 	 * @return a user-friendly label for the severity implied by an event id.
 	 *     This function is aware of the fact that all posix events are errors.
 	 */
-	const char * get_severity_label(int eid) const;
+	static const char * get_severity_label(int eid);
 
 	/**
 	 * @return the {@link Escalation} for a particular event.
 	 */
-	escalation_t get_escalation(int eid) const;
+	static escalation_t get_escalation(int eid);
 
 	/**
 	 * @return the 13-bit number that's unique to all events in a given codebase,
 	 *     but not unique across all codebases.
 	 */
-	int get_nonunique_number(int eid) const;
+	static int get_nonunique_number(int eid);
 
 	/**
 	 * @return the identifier for the codebase that originated an event.
 	 * @see KnownComponent
 	 */
-	known_component_t get_component(int eid) const;
+	static known_component_t get_component(int eid);
 
 	/**
 	 * @return the topic for an event, if known to this codebase, or the empty
@@ -169,7 +169,7 @@ public:
 	 * Convert an event ID into standard form (0xXXXXXXXX if component != POSIX,
 	 * or just a decimal number for POSIX).
 	 */
-	std::string get_std_id_repr(int eid) const;
+	static std::string get_std_id_repr(int eid);
 
 	/**
 	 * Convert an event ID into standard form (0xXXXXXXXX if component != POSIX,
@@ -178,8 +178,8 @@ public:
 	 *
 	 * @return bytes copied, or 0 if buffer is too short.
 	 */
-	size_t get_std_id_repr(int eid, char * buf, size_t buflen) const;
-	const size_t MIN_STD_ID_REPR = 11;
+	static size_t get_std_id_repr(int eid, char * buf, size_t buflen);
+	static const size_t MIN_STD_ID_REPR = 11;
 
 	/**
 	 * How many args should be used with this event?

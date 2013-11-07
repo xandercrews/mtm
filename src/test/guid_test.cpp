@@ -1,5 +1,6 @@
 #include "base/guid.h"
 #include "base/error.h"
+
 #include "gtest/gtest.h"
 
 TEST(guid_test, easy) {

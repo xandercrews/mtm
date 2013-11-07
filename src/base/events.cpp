@@ -52,25 +52,25 @@ char const * events::get_symbolic_name(int eid) const {
 	return e ? e->name : "";
 }
 
-severity_t events::get_severity(int eid) const {
+severity_t events::get_severity(int eid) {
 	if (get_component(eid) == kc_posix) {
 		return eid ? sev_error : sev_info;
 	}
 	return static_cast<severity_t>(eid >> 28 & 0x3);
 }
 
-escalation_t events::get_escalation(int eid) const {
+escalation_t events::get_escalation(int eid) {
 	if (get_component(eid) == kc_posix) {
 		return eid? esc_user : esc_admin;
 	}
 	return static_cast<escalation_t>(eid >> 14 & 0x3);
 }
 
-int events::get_nonunique_number(int eid) const {
+int events::get_nonunique_number(int eid) {
 	return eid & 0x3FFF;
 }
 
-known_component_t events::get_component(int eid) const {
+known_component_t events::get_component(int eid) {
 	return static_cast<known_component_t>(eid >> 16 & 0x0FFF);
 }
 
@@ -110,13 +110,13 @@ char const * events::get_comments(int eid) const {
 	return e ? e->comments : "";
 }
 
-std::string events::get_std_id_repr(int eid) const {
+std::string events::get_std_id_repr(int eid) {
 	char buf[MIN_STD_ID_REPR];
 	get_std_id_repr(eid, buf, sizeof(buf));
 	return buf;
 }
 
-size_t events::get_std_id_repr(int eid, char * buf, size_t buflen) const {
+size_t events::get_std_id_repr(int eid, char * buf, size_t buflen) {
 	if (buflen >= MIN_STD_ID_REPR) {
 		auto format = (get_component(eid) == 0) ? "%d" : "0x%08X";
 		return sprintf(buf, format, eid);
@@ -135,7 +135,7 @@ const char * const SeverityLabels[4] = {
 	"Fatal error"
 };
 
-char const * events::get_severity_label(int eid) const {
+char const * events::get_severity_label(int eid) {
 	if (get_component(eid) == kc_posix) {
 		return eid ? "Posix error" : "Posix info";
 	}

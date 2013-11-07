@@ -10,6 +10,7 @@ namespace nitro {
  * from a coordinator.
  */
 class worker_engine : public engine {
+
 public:
 	worker_engine(cmdline const & cmdline);
 	virtual ~worker_engine();
@@ -22,6 +23,10 @@ public:
 	 * handle objects can be passed from one owner to another, like batons.
 	 */
 	typedef std::unique_ptr<engine> handle;
+
+protected:
+	virtual int do_run();
+
 };
 
 } // end namespace nitro

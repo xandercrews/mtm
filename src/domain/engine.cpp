@@ -5,6 +5,7 @@
 #include "base/event_ids.h"
 #include "base/guid.h"
 #include "base/interp.h"
+#include "base/xlog.h"
 
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
@@ -18,7 +19,8 @@ namespace nitro {
 
 engine::engine(cmdline const & cmdline) :
 		ctx(_ctx), responder(_responder), publisher(_publisher),
-		reply_port(0), publish_port(0), id(), inproc_endpoint() {
+		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
+		id(), inproc_endpoint() {
 	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
 	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
@@ -57,8 +59,15 @@ char const * engine::get_id() const {
 	return id.c_str();
 }
 
-char const * engine::get_inproc_endpoint() const {
-	return inproc_endpoint.c_str();
+char const * engine::get_subscribe_endpoint(char const * transport) const {
+	PRECONDITION(transport);
+	if (strcmp(transport, "tcp") == 0) {
+		return tcp_endpoint.c_str();
+	}
+	if (strcmp(transport, "inproc") == 0) {
+		return inproc_endpoint.c_str();
+	}
+	PRECONDITION("transport must be \"tcp\" or \"inproc\"." && false);
 }
 
 int engine::get_reply_port() const {
@@ -94,7 +103,21 @@ engine::handle make_engine(cmdline const & cmdline) {
 	}
 }
 
-
+int engine::run() {
+	int exit_code;
+	try {
+		xlog("Running engine %1", get_id());
+		exit_code = do_run();
+	} catch (std::exception const & e) {
+		xlog(e.what());
+		exit_code = 1;
+	} catch (...) {
+		xlog("Caught unrecognized exception.");
+		exit_code = 1;
+	}
+	xlog("Returning exit code %1", exit_code);
+	return exit_code;
+}
 
 #if 0
 int engine::run() {

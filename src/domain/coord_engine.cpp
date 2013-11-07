@@ -6,8 +6,9 @@
 
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
+#include "domain/msg.h"
 
-#include "zeromq/include/zmq.hpp"
+#include "zeromq/include/zmq.h"
 
 using namespace std;
 
@@ -53,10 +54,10 @@ coord_engine::~coord_engine() {
 
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
 
-int coord_engine::run() {
-    while (1) {
-        zmq_send(publisher, "hello", 6, 0);
-        this_thread::sleep_for(chrono::milliseconds(500));
+int coord_engine::do_run() {
+    for (int i = 0; i < 7; ++i) {
+        send_full_msg(publisher, "hello");
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
     return 0;
 }

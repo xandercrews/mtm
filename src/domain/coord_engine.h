@@ -18,7 +18,7 @@ public:
 	coord_engine(cmdline const &);
 	virtual ~coord_engine();
 
-	virtual int run();
+	virtual int do_run();
 
 	typedef std::vector<std::string> hostlist_t;
 	hostlist_t const & get_hostlist() const;

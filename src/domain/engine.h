@@ -23,7 +23,11 @@ public:
 	engine(cmdline const &);
 	virtual ~engine();
 
-	virtual int run() { return 0; }
+	/**
+	 * Do all work of the engine, and return a posix-style exit code suitable
+	 * for returning from main.
+	 */
+	int run();
 
 	/**
 	 * Get a guid-like string that distinguishes this engine instance from all
@@ -36,7 +40,7 @@ public:
 	 * Identifies the endpoint to subscribe to if you want to listen to what
 	 * this engine is doing as it runs.
 	 */
-	char const * get_inproc_endpoint() const;
+	char const * get_subscribe_endpoint(char const * transport) const;
 
 	/**
 	 * What port are we listening on?
@@ -80,7 +84,8 @@ public:
 	void * const & ctx;
 
 protected:
-	void signal_ready();
+	virtual int do_run() = 0;
+
 	// Allow derived classes to use the sockets we've opened, without
 	// reassigning them.
 	void * const & responder;
@@ -94,6 +99,7 @@ private:
 	void * _publisher;
 	std::string id;
 	std::string inproc_endpoint;
+	std::string tcp_endpoint;
 };
 
 /**
