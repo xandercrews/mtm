@@ -55,7 +55,7 @@ TEST(event_test, valid_names_and_argrefs) {
 			ADD_FAILURE() << prefix << "is too short to be useful.";
 		} else {
 			auto end = strchr(msg, 0) - 1;
-			if (*end != '.') {
+			if (*end != '.' && *end != '?') {
 				if (!(*end >= '1' && *end <= '9' && end[-1] == '%')) {
 					if (*end != '}') {
 						ADD_FAILURE() << prefix << "isn't punctuated as a"

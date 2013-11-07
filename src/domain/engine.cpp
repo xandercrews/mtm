@@ -42,6 +42,7 @@ engine::engine(cmdline const & cmdline) :
     }
     if (rc != 0) {
     	zmq_close(_publisher);
+    	_publisher = 0;
     	zmq_ctx_destroy(_ctx);
     	_ctx = 0;
     	throw ERROR_EVENT(errno);
@@ -49,13 +50,14 @@ engine::engine(cmdline const & cmdline) :
 }
 
 engine::~engine() {
-	if (publisher) {
-		zmq_setsockopt(publisher, ZMQ_LINGER, 0, sizeof(0));
-		zmq_close(publisher);
+	int linger = 0;
+	if (_publisher) {
+		zmq_setsockopt(_publisher, ZMQ_LINGER, &linger, sizeof(linger));
+		zmq_close(_publisher);
 	}
-	if (responder) {
-		zmq_setsockopt(responder, ZMQ_LINGER, 0, sizeof(0));
-		zmq_close(responder);
+	if (_responder) {
+		zmq_setsockopt(_responder, ZMQ_LINGER, &linger, sizeof(linger));
+		zmq_close(_responder);
 	}
 	if (ctx) {
 		zmq_ctx_destroy(ctx);
