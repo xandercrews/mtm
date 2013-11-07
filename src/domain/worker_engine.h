@@ -13,6 +13,15 @@ class worker_engine : public engine {
 public:
 	worker_engine(cmdline const & cmdline);
 	virtual ~worker_engine();
+
+	/**
+	 * An engine handle manages the lifetime of an engine instance. When the
+	 * handle goes out of scope, the engine automatically shuts down (cleanly),
+	 * and all resources are released. It goes dark on the network.
+	 *
+	 * handle objects can be passed from one owner to another, like batons.
+	 */
+	typedef std::unique_ptr<engine> handle;
 };
 
 } // end namespace nitro

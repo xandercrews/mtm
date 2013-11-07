@@ -1,20 +1,17 @@
-/*
- * engine_test.cpp
- *
- *  Created on: Oct 24, 2013
- *      Author: dhardman
- */
+#include <thread>
 
-#include "domain/engine.h"
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
+#include "domain/engine.h"
 #include "domain/worker_engine.h"
 
 #include "gtest/gtest.h"
 
+#include "zeromq/include/zmq.hpp"
+
 using namespace nitro;
 
-engine_handle make_coord_engine(char const ** args = NULL, int argc = 0) {
+engine::handle make_coord_engine(char const ** args = NULL, int argc = 0) {
 	char const * def_args[] = {"progname", "--replyport", "52500",
 			"--publishport", "52501", "--exechost", "localhost"};
 	if (!args) {
@@ -30,7 +27,7 @@ engine_handle make_coord_engine(char const ** args = NULL, int argc = 0) {
 	return make_engine(cmdline);
 }
 
-engine_handle make_worker_engine(char const ** args = NULL, int argc = 0) {
+engine::handle make_worker_engine(char const ** args = NULL, int argc = 0) {
 	char const * def_args[] = {"progname", "--replyport", "52502",
 			"--publishport", "52503", "--workfor", "tcp://localhost:52500"};
 	if (!args) {
@@ -63,17 +60,51 @@ TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
 	ASSERT_TRUE(static_cast<bool>(worker));
 }
 
+#define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
+
+void coord_listener_thread_main(coord_engine const & coord,
+		std::vector<std::string> & msgs) {
+	try {
+	    //  Socket to talk to server
+	    fprintf (stderr, "Collecting updates from weather server\n");
+	    void *context = zmq_ctx_new ();
+	    void *subscriber = zmq_socket (context, ZMQ_SUB);
+	    int rc = zmq_connect (subscriber, "tcp://localhost:5556");
+	    assert (rc == 0);
+
+	    rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE,
+	                         "", 0);
+	    assert (rc == 0);
+
+	    //  Process 100 updates
+	    int update_nbr;
+	    long total_temp = 0;
+	    for (update_nbr = 0; update_nbr < 100; update_nbr++) {
+	    	char buf[20];
+	        zmq_recv(subscriber, buf, 20, 0);
+
+	        int zipcode, temperature, relhumidity;
+	        sscanf (buf, "%d %d %d",
+	            &zipcode, &temperature, &relhumidity);
+	        fprintf(stderr, "%s\n", buf);
+	        total_temp += temperature;
+	    }
+
+	    zmq_close (subscriber);
+	    zmq_ctx_destroy (context);
+	} catch (std::exception const & e) {
+		fprintf(stderr, e.what());
+	}
+}
+
 TEST(engine_test, complete_batch_lifecycle) {
 	auto coord = make_coord_engine();
-	auto worker = make_worker_engine();
-
+	std::vector<std::string> msgs;
+	// Have to do a little casting here. engine_handle is a handle to the base
+	// class, but we need to pass a ref to the derived class...
+	auto coord_ptr = reinterpret_cast<coord_engine *>(coord.get());
+	std::thread listener(coord_listener_thread_main, std::ref(*coord_ptr),
+			std::ref(msgs));
+	coord->run();
 }
 
-#if 0
-TEST(engine_test, two_engines_cant_bind_same_ports) {
-	auto e1 = make_coord_engine();
-	ASSERT_TRUE(static_cast<bool>(e1));
-	auto e2 = make_coord_engine();
-	ASSERT_FALSE(static_cast<bool>(e2));
-}
-#endif

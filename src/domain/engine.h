@@ -23,7 +23,7 @@ public:
 	engine(cmdline const &);
 	virtual ~engine();
 
-	int run();
+	virtual int run() { return 0; }
 
 	/**
 	 * Get a guid-like string that distinguishes this engine instance from all
@@ -54,29 +54,29 @@ public:
 	void handle_ping_request(/*zmq::message_t const & msg*/) const;
 	void handle_terminate_request(/*zmq::message_t const & msg*/) const;
 
+	/**
+	 * An engine handle manages the lifetime of an engine instance. When the
+	 * handle goes out of scope, the engine automatically shuts down (cleanly),
+	 * and all resources are released. It goes dark on the network.
+	 *
+	 * handle objects can be passed from one owner to another, like batons.
+	 */
+	typedef std::unique_ptr<engine> handle;
+
 private:
 	int reply_port;
 	int publish_port;
 	void * zmq_ctx;
-	void * zmq_passive_socket;
-	void * zmq_active_socket;
+	void * zmq_reply_socket;
+	void * zmq_pub_socket;
 	std::string id;
 };
-
-/**
- * An engine_handle manages the lifetime of an engine instance. When the
- * handle goes out of scope, the engine automatically shuts down (cleanly),
- * and all resources are released. It goes dark on the network.
- *
- * engine_handle objects can be passed from one owner to another, like batons.
- */
-typedef std::unique_ptr<engine> engine_handle;
 
 /**
  * Factory method. Choose which type of engine to make based on content of
  * cmdline; init from cmdline choices.
  */
-engine_handle make_engine(cmdline const & cmdline);
+engine::handle make_engine(cmdline const & cmdline);
 
 } // end namespace nitro
 

@@ -18,7 +18,7 @@ namespace nitro {
 
 engine::engine(cmdline const & cmdline) :
 		reply_port(0), publish_port(0), zmq_ctx(0),
-		zmq_passive_socket(0), zmq_active_socket(0) {
+		zmq_reply_socket(0), zmq_pub_socket(0) {
 	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
 	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
@@ -29,25 +29,29 @@ engine::engine(cmdline const & cmdline) :
 		generate_guid(buf, sizeof(buf));
 		id = buf;
 	}
+#if 0
 	zmq_ctx = zmq_ctx_new();
-	zmq_passive_socket = zmq_socket(zmq_ctx, ZMQ_REP);
-	int rc = zmq_bind(zmq_passive_socket, interp(
+	zmq_reply_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+	int rc = zmq_bind(zmq_reply_socket, interp(
 			"tcp://*:%1{port}", reply_port).c_str());
 	// TODO: use scope guard to clean up here.
 	if (rc) {
 		zmq_ctx_destroy(zmq_ctx);
 		zmq_ctx = 0;
 	} else {
-		zmq_active_socket = zmq_socket(zmq_ctx, ZMQ_REP);
+		zmq_pub_socket = zmq_socket(zmq_ctx, ZMQ_PUB);
 	}
+	zmq_pub_socket = zmq_socket(zmq_ctx, ZMQ_PUB);
+	int rc = zmq_bind(zmq_pub_socket, interp("inproc://%1", get_id()).c_str());
+#endif
 }
 
 engine::~engine() {
-	if (zmq_active_socket) {
-		zmq_close(zmq_active_socket);
+	if (zmq_pub_socket) {
+		zmq_close(zmq_pub_socket);
 	}
-	if (zmq_passive_socket) {
-		zmq_close(zmq_passive_socket);
+	if (zmq_reply_socket) {
+		zmq_close(zmq_reply_socket);
 	}
 	if (zmq_ctx) {
 		zmq_ctx_destroy(zmq_ctx);
@@ -82,8 +86,8 @@ void send_progress_report_thread_main() {
 	}
 }
 
+#if 0
 int engine::run() {
-
 #if 0
 	start listening on reply_port
 
@@ -118,13 +122,14 @@ int engine::run() {
 #endif
 	return 0;
 }
+#endif
 
-engine_handle make_engine(cmdline const & cmdline) {
+engine::handle make_engine(cmdline const & cmdline) {
 	bool worker_mode = cmdline.get_option("--workfor") != NULL;
 	if (worker_mode) {
-		return engine_handle(new worker_engine(cmdline));
+		return engine::handle(new worker_engine(cmdline));
 	} else {
-		return engine_handle(new coord_engine(cmdline));
+		return engine::handle(new coord_engine(cmdline));
 	}
 }
 

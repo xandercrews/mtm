@@ -36,7 +36,7 @@ int main(int argc, char ** argv) {
 
 		// Build whatever type of engine we need for this commandline, and then
 		// run it.
-		engine_handle engine = make_engine(cmdline);
+		engine::handle engine = make_engine(cmdline);
 		return engine->run();
 
 	} catch (std::exception const & e) {
