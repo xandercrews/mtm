@@ -4,6 +4,10 @@
 #include <memory>
 #include <string>
 
+namespace zmq {
+	class context_t;
+}
+
 namespace nitro {
 
 const char * const INPROC_PASSIVE_BINDING = "inproc://passive%1{engine_id}";
@@ -12,15 +16,11 @@ const char * const INPROC_ACTIVE_BINDING = "inproc://active%1{engine_id}";
 class cmdline;
 
 /**
- * An interface for the workhorse of our application. More than one type of
- * engine is available to us, but clients only get to interact with the engine
- * through this public and fairly abstract interface.
- *
- * The ctor for this class is protected by design. The only way to create
- * engines is to use the abstract factory (see below).
+ * A base class for the workhorses of our application.
  */
 class engine {
 public:
+	engine(int reply_port, int publish_port);
 	virtual ~engine();
 
 	int run();
@@ -40,27 +40,23 @@ public:
 	 * conversations. In this respect, we use the port in much the same way
 	 * as a web server uses ports on which incoming http requests arrive.
 	 */
-	int get_passive_port() const;
+	int get_reply_port() const;
 
 	/**
 	 * What port do we use to initiate new conversations with others?
 	 *
-	 * In leader mode, we use this port to proactively communicate with our
-	 * followers. In follower mode, we use this port for an occasional status
+	 * In manager mode, we use this port to proactively communicate with our
+	 * workers. In worker mode, we use this port for an occasional status
 	 * report.
 	 */
-	int get_active_port() const;
+	int get_publish_port() const;
 
-	virtual bool is_follower() const = 0;
 	void handle_ping_request(/*zmq::message_t const & msg*/) const;
 	void handle_terminate_request(/*zmq::message_t const & msg*/) const;
 
-protected:
-	engine(int passive_port, int active_port);
-
 private:
-	int passive_port;
-	int active_port;
+	int reply_port;
+	int publish_port;
 	void * zmq_ctx;
 	void * zmq_passive_socket;
 	void * zmq_active_socket;
@@ -77,39 +73,10 @@ private:
 typedef std::unique_ptr<engine> engine_handle;
 
 /**
- * An abstract factory that will deliver an engine to be our workhorse. Typical
- * usage:
- *
- *     engine_factory & factory = engine_factory::singleton();
- *     engine_handle my_engine = factory.make(cmdline);
+ * Factory method. Choose which type of engine to make based on content of
+ * cmdline; init from cmdline choices.
  */
-class engine_factory {
-public:
-	static engine_factory & singleton();
-
-	/**
-	 * Create a new instance of an engine that's appropriate for the cmdline
-	 * we've been given.
-	 *
-	 * @tag If present, require an engine that supports the specified feature.
-	 *     This is for advanced use cases such as simulation, and is unnecessary
-	 *     in normal usage.
-	 */
-	engine_handle make(cmdline const & cmdline, char const * tag = NULL) const;
-
-	/**
-	 * Different classes register with the factory so it knows how to make
-	 * them. Clients don't need to worry about this.
-	 */
-	typedef engine_handle (*engine_ctor)(int passive_port, int active_port);
-	bool register_ctor(engine_ctor ctor, bool follow_mode, char const * tag);
-
-	engine_factory();
-	~engine_factory();
-private:
-	struct data_t;
-	data_t * data;
-};
+engine_handle make_engine(cmdline const & cmdline);
 
 } // end namespace nitro
 

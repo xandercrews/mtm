@@ -34,11 +34,11 @@ TEST(cmdline_test, help_needed_with_help_explicitly_requested) {
 }
 
 TEST(cmdline_test, help_needed_with_error) {
-	char const * args[] = {"nitro", "--passiveport"};
+	char const * args[] = {"nitro", "--replyport"};
 	cmdline x(2, args);
 	ASSERT_TRUE(x.help_needed());
-	// Should get error about needing an argument for --passiveport.
-	expect_errors_contain(x.get_errors(), "Expected --passiveport option to be followed by");
+	// Should get error about needing an argument for --replyport.
+	expect_errors_contain(x.get_errors(), "Expected --replyport option to be followed by");
 }
 
 TEST(cmdline_test, bogus_flag) {
@@ -48,14 +48,14 @@ TEST(cmdline_test, bogus_flag) {
 }
 
 TEST(cmdline_test, non_numeric_port_error) {
-	char const * args[] = {"nitro", "--passiveport", "abc"};
+	char const * args[] = {"nitro", "--replyport", "abc"};
 	cmdline x(3, args);
 	// Should get error about numeric port.
 	expect_errors_contain(x.get_errors(), "Expected numeric port value");
 }
 
 TEST(cmdline_test, out_of_range_port_error) {
-	char const * args[] = {"nitro", "--activeport", "1234567"};
+	char const * args[] = {"nitro", "--publishport", "1234567"};
 	cmdline x(3, args);
 	// Should get error about value out of range.
 	expect_errors_contain(x.get_errors(), "6553"/*6 or 5*/);

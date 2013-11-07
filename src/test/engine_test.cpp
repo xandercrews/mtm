@@ -5,17 +5,18 @@
  *      Author: dhardman
  */
 
-#include "gtest/gtest.h"
 #include "domain/engine.h"
 #include "domain/cmdline.h"
+#include "domain/coord_engine.h"
+#include "domain/worker_engine.h"
+
+#include "gtest/gtest.h"
 
 using namespace nitro;
 
-engine_factory const & factory = engine_factory::singleton();
-
-engine_handle make_leader_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"progname", "--passiveport", "52500",
-			"--activeport", "52501"};
+engine_handle make_coord_engine(char const ** args = NULL, int argc = 0) {
+	char const * def_args[] = {"progname", "--replyport", "52500",
+			"--publishport", "52501"};
 	if (!args) {
 		args = def_args;
 		argc = 5;
@@ -26,12 +27,12 @@ engine_handle make_leader_engine(char const ** args = NULL, int argc = 0) {
 			ADD_FAILURE() << e.what();
 		}
 	}
-	return factory.make(cmdline);
+	return make_engine(cmdline);
 }
 
-engine_handle make_follower_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"progname", "--passiveport", "52502",
-			"--activeport", "52503", "--leader", "tcp://localhost:52500"};
+engine_handle make_worker_engine(char const ** args = NULL, int argc = 0) {
+	char const * def_args[] = {"progname", "--replyport", "52502",
+			"--publishport", "52503", "--workfor", "tcp://localhost:52500"};
 	if (!args) {
 		args = def_args;
 		argc = 7;
@@ -42,21 +43,35 @@ engine_handle make_follower_engine(char const ** args = NULL, int argc = 0) {
 			ADD_FAILURE() << e.what();
 		}
 	}
-	return factory.make(cmdline);
+	return make_engine(cmdline);
 }
 
-TEST(engine_test, leader_ctor_works) {
-	auto engine = make_leader_engine();
-	ASSERT_TRUE(static_cast<bool>(engine));
-	ASSERT_FALSE(engine->is_follower());
+TEST(engine_test, manager_ctor_works) {
+	auto engine = make_coord_engine();
+	ASSERT_TRUE(dynamic_cast<coord_engine *>(engine.get()) != NULL);
 }
 
-TEST(engine_test, follower_ctor_works) {
-	auto engine = make_leader_engine();
-	ASSERT_TRUE(static_cast<bool>(engine));
-	ASSERT_FALSE(engine->is_follower());
+TEST(engine_test, worker_ctor_works) {
+	auto engine = make_worker_engine();
+	ASSERT_TRUE(dynamic_cast<worker_engine *>(engine.get()) != NULL);
 }
 
-TEST(engine_test, respond_to_ping) {
+TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
+	auto manager = make_coord_engine();
+	ASSERT_TRUE(static_cast<bool>(manager));
+	auto worker = make_worker_engine();
+	ASSERT_TRUE(static_cast<bool>(worker));
+}
+
+TEST(engine_test, complete_batch_lifecycle) {
 
 }
+
+#if 0
+TEST(engine_test, two_engines_cant_bind_same_ports) {
+	auto e1 = make_coord_engine();
+	ASSERT_TRUE(static_cast<bool>(e1));
+	auto e2 = make_coord_engine();
+	ASSERT_FALSE(static_cast<bool>(e2));
+}
+#endif

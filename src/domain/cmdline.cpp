@@ -29,7 +29,7 @@ char const * cmdline::get_valid_flags() const {
  * For the time being, this is as far as I got.
  */
 char const * cmdline::get_valid_options() const {
-	return "--passiveport|-p|--activeport|-a";
+	return "--replyport|-r|--publishport|-p|--workfor|-w";
 }
 
 char const * cmdline::get_default_program_name() const {
@@ -58,8 +58,8 @@ int cmdline::validate_port(char const * port_switch, int exclusive_port) {
 
 void cmdline::parse(int argc, char const ** argv) {
 	cmdline_base::parse(argc, argv);
-	auto n = validate_port("--passiveport");
-	validate_port("--activeport", n);
+	auto n = validate_port("--replyport");
+	validate_port("--publishport", n);
 }
 
 cmdline::cmdline(int argc, char const ** argv) {
@@ -84,13 +84,13 @@ std::string cmdline::get_help() const {
 		"  Syntax: %2{progname} [flags] [options] [batch file(s)]\n"
 		"\n"
 		"    Flags:\n"
-		"      --help or -h        -- Display this screen.\n"
+		"      --help or -h         -- Display this screen.\n"
 		"\n"
 		"    Options:\n"
-		"      --leader or -l      -- Take work from %2{progname} on this host.\n"
+		"      --workfor or -w      -- Take work from coordinator on specified host.\n"
 		"                             (Precludes batch files on cmdline.)\n"
-		"      --passiveport or -p -- Listen on this port (%3{defpport} is default).\n"
-		"      --activeport or -a  -- Talk on this port (%4{defaport} is default).\n"
+		"      --replyport or -r    -- Listen on this port (%3{defpport} is default).\n"
+		"      --publishport or -p  -- Talk on this port (%4{defaport} is default).\n"
 		"\n",
 		e, get_program_name(), DEFAULT_PASSIVE_PORT, DEFAULT_ACTIVE_PORT
 		);

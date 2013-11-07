@@ -1,25 +1,27 @@
 #include <stdexcept>
 #include <thread>
-#include <vector>
-#include <zmq.h>
 
-#include "base/guid.h"
 #include "base/dbc.h"
 #include "base/event_ids.h"
+#include "base/guid.h"
 #include "base/interp.h"
 
+#include "domain/cmdline.h"
+#include "domain/coord_engine.h"
 #include "domain/engine.h"
 #include "domain/event_ids.h"
-#include "domain/cmdline.h"
+#include "domain/worker_engine.h"
+
+#include "zeromq/include/zmq.hpp"
 
 namespace nitro {
 
 engine::engine(int pport, int aport) :
-		passive_port(pport), active_port(aport), zmq_ctx(0),
+		reply_port(pport), publish_port(aport), zmq_ctx(0),
 		zmq_passive_socket(0), zmq_active_socket(0) {
-	PRECONDITION(passive_port > 1024 && passive_port < 65536);
-	PRECONDITION(active_port > 1024 && active_port < 65536);
-	PRECONDITION(passive_port != active_port);
+	PRECONDITION(reply_port > 1024 && reply_port < 65536);
+	PRECONDITION(publish_port > 1024 && publish_port < 65536);
+	PRECONDITION(reply_port != publish_port);
 	{
 		char buf[GUID_BUF_LEN];
 		generate_guid(buf, sizeof(buf));
@@ -28,7 +30,7 @@ engine::engine(int pport, int aport) :
 	zmq_ctx = zmq_ctx_new();
 	zmq_passive_socket = zmq_socket(zmq_ctx, ZMQ_REP);
 	int rc = zmq_bind(zmq_passive_socket, interp(
-			"tcp://*:%1{port}", passive_port).c_str());
+			"tcp://*:%1{port}", reply_port).c_str());
 	// TODO: use scope guard to clean up here.
 	if (rc) {
 		zmq_ctx_destroy(zmq_ctx);
@@ -54,12 +56,12 @@ char const * engine::get_id() const {
 	return id.c_str();
 }
 
-int engine::get_passive_port() const {
-	return passive_port;
+int engine::get_reply_port() const {
+	return reply_port;
 }
 
-int engine::get_active_port() const {
-	return active_port;
+int engine::get_publish_port() const {
+	return publish_port;
 }
 
 void engine::handle_ping_request(/*zmq::message_t const & msg*/) const {
@@ -81,7 +83,7 @@ void send_progress_report_thread_main() {
 int engine::run() {
 
 #if 0
-	start listening on passive_port
+	start listening on reply_port
 
 	    If I get a json msg where the event code == NITRO_PING_REQUEST,
 	    ... call handle_ping_request(). (see base/event_tuples.h to see how
@@ -115,67 +117,15 @@ int engine::run() {
 	return 0;
 }
 
-engine_factory & engine_factory::singleton() {
-	static engine_factory the_factory;
-	return the_factory;
-}
-
-struct ctor_info {
-	engine_factory::engine_ctor ctor;
-	std::string tag;
-	bool follow_mode;
-};
-
-typedef std::vector<ctor_info> ctor_infos;
-
-struct engine_factory::data_t {
-	ctor_infos infos;
-};
-
-engine_factory::engine_factory() : data(new data_t) {
-}
-
-engine_factory::~engine_factory() {
-	delete data;
-}
-
-engine_handle engine_factory::make(cmdline const & cmdline, char const * tag)
-		const {
-	bool follow_mode = cmdline.get_option("--leader") != NULL;
-	int passive_port = cmdline.get_option_as_int("--listenport", DEFAULT_PASSIVE_PORT);
-	int active_port = cmdline.get_option_as_int("--talkport", DEFAULT_ACTIVE_PORT);
-	for (auto i: data->infos) {
-		if (i.follow_mode == follow_mode) {
-			if (tag == NULL || *tag == 0 || i.tag == tag) {
-				return i.ctor(passive_port, active_port);
-			}
-		}
+engine_handle make_engine(cmdline const & cmdline) {
+	bool worker_mode = cmdline.get_option("--workfor") != NULL;
+	int reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
+	int publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
+	if (worker_mode) {
+		return engine_handle(new worker_engine(reply_port, publish_port));
+	} else {
+		return engine_handle(new coord_engine(reply_port, publish_port));
 	}
-	return NULL;
 }
-
-bool engine_factory::register_ctor(engine_ctor ctor, bool follow_mode,
-			char const * tag) {
-	for (auto i: data->infos) {
-		if (i.ctor == ctor) {
-			return false;
-		}
-	}
-	ctor_info ci;
-	ci.ctor = ctor;
-	ci.follow_mode = follow_mode;
-	ci.tag = tag ? tag : "";
-	data->infos.push_back(ci);
-	return true;
-}
-
-// Force helper_engine and leader_engine to be linked. Tests or other code
-// can add others if it likes, but these two engines always need to be
-// available.
-extern bool register_leader_engine();
-extern bool register_follower_engine();
-
-bool rle = register_leader_engine();
-bool rfe = register_follower_engine();
 
 } // end namespace nitro
