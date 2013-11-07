@@ -126,7 +126,6 @@ int engine::run() {
 
 #if 0
 int engine::run() {
-#if 0
 	start listening on reply_port
 
 	    If I get a json msg where the event code == NITRO_PING_REQUEST,
@@ -141,23 +140,6 @@ int engine::run() {
 
 	   call send_progress_report_thread_main();
 
-#endif
-
-#if 0
-	initialize(); // prove we can communicate
-	start_listening();
-	while (more_files) {
-		try {
-			Batch batch(file);
-			Chunk = get_chunk();
-			chunk.prioritize();
-			chunk.find_eligible_jobs();
-			chunk.distribute();
-		} catch (std::runtime_error const & e) {
-
-		}
-	}
-#endif
 	return 0;
 }
 #endif

@@ -23,6 +23,8 @@ public:
 	typedef std::vector<std::string> hostlist_t;
 	hostlist_t const & get_hostlist() const;
 
+	void enroll_workers(int eid);
+
 	/**
 	 * An engine handle manages the lifetime of an engine instance. When the
 	 * handle goes out of scope, the engine automatically shuts down (cleanly),
@@ -34,6 +36,7 @@ public:
 
 private:
 	hostlist_t hostlist;
+	void * requester;
 };
 
 } // end namespace nitro

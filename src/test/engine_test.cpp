@@ -98,4 +98,11 @@ TEST(engine_test, complete_batch_lifecycle) {
 			std::ref(msgs));
 	coord->run();
 }
+#else
+
+TEST(engine_test, run_sample_batch) {
+	auto coord = make_coord_engine();
+	coord->run();
+	exit(0);
+}
 #endif

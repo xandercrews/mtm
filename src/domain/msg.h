@@ -7,6 +7,7 @@
 
 namespace nitro {
 
+std::string serialize_msg(int eid);
 std::string serialize_msg(int eid, std::string const & txt);
 bool deserialize_msg(std::string const & txt, Json::Value & into);
 

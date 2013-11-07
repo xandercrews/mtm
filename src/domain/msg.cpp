@@ -7,6 +7,17 @@
 
 namespace nitro {
 
+std::string serialize_msg(int eid) {
+	Json::Value root;
+	char guid[GUID_BUF_LEN];
+	generate_guid(guid, sizeof(guid));
+	root["messageId"] = guid;
+	root["senderId"] = "nitro@localhost"; // TODO: fix
+	root["body"]["code"] = events::get_std_id_repr(eid);
+	Json::StyledWriter writer;
+	return writer.write(root);
+}
+
 std::string serialize_msg(int eid, std::string const & txt) {
 	Json::Value root;
 	char guid[GUID_BUF_LEN];
