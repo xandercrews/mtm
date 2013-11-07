@@ -50,9 +50,11 @@ engine::engine(cmdline const & cmdline) :
 
 engine::~engine() {
 	if (publisher) {
+		zmq_setsockopt(publisher, ZMQ_LINGER, 0, sizeof(0));
 		zmq_close(publisher);
 	}
 	if (responder) {
+		zmq_setsockopt(responder, ZMQ_LINGER, 0, sizeof(0));
 		zmq_close(responder);
 	}
 	if (ctx) {

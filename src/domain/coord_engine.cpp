@@ -87,19 +87,6 @@ void coord_engine::enroll_workers(int eid) {
 }
 
 int coord_engine::do_run() {
-#if 0
-	while (more_files) {
-		try {
-			Batch batch(file);
-			Chunk = get_chunk();
-			chunk.prioritize();
-			chunk.find_eligible_jobs();
-			chunk.distribute();
-		} catch (std::runtime_error const & e) {
-
-		}
-	}
-#endif
 	// This is totally the wrong way to do dispatch of assignments. I'm
 	// completely abusing zmq by short-circuiting its own fair share routing
 	// and by creating and destroying sockets right and left. I've only done
@@ -122,14 +109,30 @@ int coord_engine::do_run() {
 			if (host == hostlist.end()) {
 				host = hostlist.begin();
 			}
+			zmq_close(requester);
     	} catch (error_event const & e) {
     		zmq_close(requester);
     	}
     }
 
 	enroll_workers(NITRO_TERMINATE_REQUEST);
-
+	this_thread::sleep_for(chrono::milliseconds(100));
+	zmq_setsockopt(requester, ZMQ_LINGER, 0, sizeof(0));
+	zmq_close(requester);
     return 0;
 }
 
+#if 0
+	while (more_files) {
+		try {
+			Batch batch(file);
+			Chunk = get_chunk();
+			chunk.prioritize();
+			chunk.find_eligible_jobs();
+			chunk.distribute();
+		} catch (std::runtime_error const & e) {
+
+		}
+	}
+#endif
 } // end namespace nitro
