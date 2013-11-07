@@ -38,9 +38,11 @@ public:
 	 */
 	typedef std::unique_ptr<coord_engine> handle;
 
+	void *& ctx;
+
 private:
 	hostlist_t hostlist;
-	mutable bool ready;
+	mutable void * _ctx;
 	mutable std::mutex ready_mutex;
 	mutable std::condition_variable ready_signal;
 };

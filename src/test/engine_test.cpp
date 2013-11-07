@@ -64,13 +64,14 @@ TEST(engine_test, manager_and_worker_can_coexist_on_same_box) {
 
 void coord_listener_thread_main(coord_engine const & coord,
 		std::vector<std::string> & msgs) {
+
 	try {
-	    //  Socket to talk to server
-	    fprintf (stderr, "Collecting updates from weather server\n");
-	    void *context = zmq_ctx_new ();
+		coord.wait_until_ready();
+
+	    void *context = coord.ctx; //zmq_ctx_new ();
 	    void *subscriber = zmq_socket (context, ZMQ_SUB);
-	    int rc = zmq_connect (subscriber, "tcp://localhost:5556");
-	    assert (rc == 0);
+	    int rc;
+	    tryz(zmq_connect (subscriber, "inproc://weather.ipc"));
 
 	    rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE,
 	                         "", 0);
@@ -91,7 +92,7 @@ void coord_listener_thread_main(coord_engine const & coord,
 	    }
 
 	    zmq_close (subscriber);
-	    zmq_ctx_destroy (context);
+	    //zmq_ctx_destroy (context);
 	} catch (std::exception const & e) {
 		fprintf(stderr, e.what());
 	}
