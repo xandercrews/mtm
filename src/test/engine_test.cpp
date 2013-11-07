@@ -74,7 +74,7 @@ void coord_listener_thread_main(coord_engine const & coord,
 	    void *context = coord.ctx;
 	    void *subscriber = zmq_socket(context, ZMQ_SUB);
 	    int rc;
-	    tryz(zmq_connect(subscriber, coord.get_subscribe_endpoint("inproc")));
+	    tryz(zmq_connect(subscriber, coord.get_subscribe_endpoint("tcp")));
 	    tryz(zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, "", 0));
 
 	    for (int i = 0; i < 5; ++i) {

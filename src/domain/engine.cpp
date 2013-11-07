@@ -20,7 +20,7 @@ namespace nitro {
 engine::engine(cmdline const & cmdline) :
 		ctx(_ctx), responder(_responder), publisher(_publisher),
 		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
-		id(), inproc_endpoint() {
+		id(), inproc_endpoint(), tcp_endpoint() {
 	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
 	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
@@ -31,10 +31,15 @@ engine::engine(cmdline const & cmdline) :
 		generate_guid(buf, sizeof(buf));
 		id = buf;
 	}
-	inproc_endpoint = interp("inproc://%1", id);
     _ctx = zmq_ctx_new();
     _publisher = zmq_socket(_ctx, ZMQ_PUB);
+    // TODO: improve with scopeguard
+	inproc_endpoint = interp("inproc://%1", id);
     int rc = zmq_bind(_publisher, inproc_endpoint.c_str());
+    if (rc == 0) {
+    	tcp_endpoint = interp("tcp://127.0.0.1:%1", publish_port);
+    	rc = zmq_bind(_publisher, tcp_endpoint.c_str());
+    }
     if (rc != 0) {
     	zmq_close(_publisher);
     	zmq_ctx_destroy(_ctx);
