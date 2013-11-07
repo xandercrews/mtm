@@ -105,10 +105,13 @@ int coord_engine::do_run() {
 			tryz(zmq_connect(requester, endpoint.c_str()));
 			auto msg = serialize_msg(NITRO_HERE_IS_ASSIGNMENT, cmd);
 			send_full_msg(requester, msg);
+			// Process ACK
+			receive_full_msg(requester);
 			++host;
 			if (host == hostlist.end()) {
 				host = hostlist.begin();
 			}
+			//zmq_setsockopt(requester, ZMQ_LINGER, 0, sizeof(0));
 			zmq_close(requester);
     	} catch (error_event const & e) {
     		zmq_close(requester);
@@ -119,6 +122,7 @@ int coord_engine::do_run() {
 	this_thread::sleep_for(chrono::milliseconds(100));
 	zmq_setsockopt(requester, ZMQ_LINGER, 0, sizeof(0));
 	zmq_close(requester);
+	xlog("Completed batch.");
     return 0;
 }
 
