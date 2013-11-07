@@ -66,33 +66,20 @@ void coord_listener_thread_main(coord_engine const & coord,
 		std::vector<std::string> & msgs) {
 
 	try {
-		coord.wait_until_ready();
-
 	    void *context = coord.ctx; //zmq_ctx_new ();
 	    void *subscriber = zmq_socket (context, ZMQ_SUB);
 	    int rc;
-	    tryz(zmq_connect (subscriber, "inproc://weather.ipc"));
-
-	    rc = zmq_setsockopt (subscriber, ZMQ_SUBSCRIBE,
-	                         "", 0);
-	    assert (rc == 0);
+	    tryz(zmq_connect(subscriber, coord.get_inproc_endpoint()));
+	    tryz(zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, "", 0));
 
 	    //  Process 100 updates
 	    int update_nbr;
-	    long total_temp = 0;
-	    for (update_nbr = 0; update_nbr < 100; update_nbr++) {
+	    for (update_nbr = 0; update_nbr < 5; update_nbr++) {
 	    	char buf[20];
 	        zmq_recv(subscriber, buf, 20, 0);
-
-	        int zipcode, temperature, relhumidity;
-	        sscanf (buf, "%d %d %d",
-	            &zipcode, &temperature, &relhumidity);
 	        fprintf(stderr, "%s\n", buf);
-	        total_temp += temperature;
 	    }
-
-	    zmq_close (subscriber);
-	    //zmq_ctx_destroy (context);
+	    zmq_close(subscriber);
 	} catch (std::exception const & e) {
 		fprintf(stderr, e.what());
 	}

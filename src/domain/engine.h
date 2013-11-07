@@ -33,6 +33,12 @@ public:
 	char const * get_id() const;
 
 	/**
+	 * Identifies the endpoint to subscribe to if you want to listen to what
+	 * this engine is doing as it runs.
+	 */
+	char const * get_inproc_endpoint() const;
+
+	/**
 	 * What port are we listening on?
 	 *
 	 * We may also talk on this port, but we only do it in response to incoming
@@ -63,13 +69,31 @@ public:
 	 */
 	typedef std::unique_ptr<engine> handle;
 
+	// Allow other threads to see our zeromq context for coordination
+	// purposes. This is fully thread-safe.
+	//
+	// Normally, we'd expose internals only through const getters; exposing
+	// internal members on a class that has to enforce the integrity of its
+	// state is a VERY bad idea. However, a zeromq context is intended to be
+	// shared across all threads in a process, and by making it a reference,
+	// we make it impossible for anyone to change its value, so we're safe.
+	void * const & ctx;
+
+protected:
+	void signal_ready();
+	// Allow derived classes to use the sockets we've opened, without
+	// reassigning them.
+	void * const & responder;
+	void * const & publisher;
+
 private:
 	int reply_port;
 	int publish_port;
-	void * zmq_ctx;
-	void * zmq_reply_socket;
-	void * zmq_pub_socket;
+	void * _ctx;
+	void * _responder;
+	void * _publisher;
 	std::string id;
+	std::string inproc_endpoint;
 };
 
 /**
