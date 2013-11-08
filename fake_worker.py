@@ -35,6 +35,7 @@ def main():
     elif code == NITRO_TERMINATE_REQUEST:
        end_time = os.times()[4]
        print("\nBatch ended. %d launch requests. Elapsed time: %.2f secs.\n" % (assignment_count, end_time - start_time))
+       socket.send("ACK")
     else:
       print(msg)
       socket.send("ACK")
