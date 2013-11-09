@@ -32,6 +32,6 @@ gtest = SConscript('gmock/gtest/src/sconscript', variant_dir='build/gtest', dupl
 gmock = SConscript('gmock/src/sconscript', variant_dir='build/gmock', duplicate=0)
 
 testrunner = test_env.Program(target='nitro-testrunner', source=sources, 
-    LIBS=[base, domain, jsoncpp, zmq, gmock, gtest, 'pthread'])
+    LIBS=[base, domain, jsoncpp, zmq, gmock, gtest, 'pthread', 'rt'])
 
 Return('testrunner')
