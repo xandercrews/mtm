@@ -27,6 +27,8 @@ public:
 protected:
 	virtual int do_run();
 
+private:
+  void * _job_annonce_sub;  
 };
 
 } // end namespace nitro

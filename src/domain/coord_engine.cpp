@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <thread>
+#include <string.h>
 
 #include "base/dbc.h"
 #include "base/file_lines.h"
@@ -57,9 +58,102 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 #endif
 		}
 	}
+
+  // Create pub socket to send multicast job annonces 
+  _job_annonce_pgm = zmq_socket(ctx, ZMQ_PUB);
+  _job_annonce_ipc = zmq_socket(ctx, ZMQ_PUB);
+  if (_job_annonce_pgm
+      && _job_annonce_ipc) {
+
+    // bind socket for remote connections
+    std::string eth = cmdline.get_option("--ethernet") ? cmdline.get_option("--ethernet") : DEFAULT_ETHERNET_INTERFACE;    
+    std::string endpoint = "epgm://" + eth + ";239.192.1.1:5555";
+    int rc = zmq_bind(_job_annonce_pgm,endpoint.c_str());
+    xlog("pub socket bind result: %1", rc);
+
+    // bind socket for local connections
+    rc = zmq_bind(_job_annonce_ipc, DEFAULT_IPC_ENDPOINT);
+    xlog("ipc pub socket bind result: %1", rc);
+  }
 }
 
 coord_engine::~coord_engine() {
+  int linger = 0;
+  if (_job_annonce_pgm) {
+    zmq_setsockopt(_job_annonce_pgm, ZMQ_LINGER, &linger, sizeof(linger));
+    zmq_close(_job_annonce_pgm);
+  }
+  if (_job_annonce_ipc) {
+    zmq_setsockopt(_job_annonce_ipc, ZMQ_LINGER, &linger, sizeof(linger));
+    zmq_close(_job_annonce_ipc);
+  }
+}
+
+void coord_engine::enroll_workers_multi(int eid)
+{
+  if (_job_annonce_pgm
+      && _job_annonce_ipc) 
+  {
+    static const string cfm_port="50000";
+
+    // Clear workers list
+    _workers.clear();
+
+    string json_msg = serialize_msg(eid, cfm_port);
+    zmq_msg_t msg, msg_copy;
+
+    // Create 2 copy of message
+    zmq_msg_init_size(&msg, json_msg.size() + _subscription.size());
+    zmq_msg_init_size(&msg_copy, json_msg.size() + _subscription.size());
+    memcpy(zmq_msg_data(&msg), _subscription.c_str(), _subscription.size());
+    memcpy((char *)zmq_msg_data(&msg) + _subscription.size(), json_msg.c_str(), json_msg.size());
+    zmq_msg_copy(&msg_copy, &msg);
+
+    // Send messages
+    int rc = zmq_sendmsg(_job_annonce_pgm, &msg, 0);
+    xlog("pgm message sending: %1", rc);
+
+    rc = zmq_sendmsg(_job_annonce_ipc, &msg_copy, 0);
+    xlog("ipc message sending: %1", rc);
+
+    // Wait for the workers responces
+    void *cfm = zmq_socket(ctx, ZMQ_PULL);
+    if (cfm) {
+      string endpoint = string("tcp://*:") + cfm_port;
+      zmq_bind(cfm, endpoint.c_str());
+
+      zmq_pollitem_t items [1];
+      items[0].socket = cfm;
+      items[0].events = ZMQ_POLLIN;
+
+      // Stop wating workers if no connection for 5 sec
+      xlog("waiting confirmations from workers...");
+      while ( (rc = zmq_poll(items, sizeof(items) / sizeof(items[0]), 5000)) > 0 )
+      {
+        for (unsigned i = 0; i < sizeof(items) / sizeof(items[0]); i++)
+        {
+          if (items[i].revents & ZMQ_POLLIN)
+          {
+            Json::Value root;
+            string json = receive_full_msg(items[i].socket);
+
+            if (deserialize_msg(json, root))
+            {
+              _workers.push_back(root["body"]["message"].asCString());
+              xlog("Got response from worker: %1", root["body"]["message"].asCString());
+            }
+          }
+        }
+      }
+
+      int linger = 0;  
+      zmq_setsockopt(cfm, ZMQ_LINGER, &linger, sizeof(linger));
+      zmq_close(cfm);
+      xlog("... done waiting confirmations from workers");
+
+      // TODO: connect directly to missed workerks
+    }
+  }
 }
 
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
@@ -166,6 +260,7 @@ int coord_engine::do_run() {
 	// and by creating and destroying sockets right and left. I've only done
 	// it this way to get some logic running that I can improve incrementally.
 
+    enroll_workers_multi(NITRO_REQUEST_HELP);
 	enroll_workers(NITRO_REQUEST_HELP);
 
 	while (true) {

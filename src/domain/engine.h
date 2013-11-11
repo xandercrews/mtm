@@ -91,6 +91,8 @@ protected:
 	void * const & responder;
 	void * const & publisher;
 
+  static const std::string _subscription;
+
 private:
 	int reply_port;
 	int publish_port;

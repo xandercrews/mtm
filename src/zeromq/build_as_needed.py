@@ -14,15 +14,17 @@ def main():
     target = '../../build/zeromq/libzmq.a'
     if not os.path.isfile(target):
       if not os.path.isfile('configure'):
-	run('autoconf')
+        run('autoconf')
       if not os.path.isfile('Makefile'):
-	run('./configure')
+        run('./configure --with-pgm')
       src = 'src/.libs/libzmq.a'
       if not os.path.isfile(src):
-	run('make -j6')
+        run('make -j6')
       run('cp %s %s' % (src, target))
   finally:
     os.chdir(old_cwd)
     
 if __name__ == '__main__':
   main()
+
+# vim: set ts=2 sw=2 expandtab:

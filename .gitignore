@@ -24,3 +24,8 @@ build
 
 # Shell files
 .directory
+
+# Intellij/IDEA/PyCharm artifacts
+.idea/
+*.iml
+*.iws

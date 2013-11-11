@@ -31,6 +31,7 @@ public:
 	void prioritize(assignment_t & asgn);
 	void distribute(assignment_t & asgn);
 	void enroll_workers(int eid);
+  void enroll_workers_multi(int eid);
 
 	/**
 	 * An engine handle manages the lifetime of an engine instance. When the
@@ -46,6 +47,9 @@ private:
 	stringlist_t hostlist;
 	stringlist_t batches;
 	void * requester;
+	void * _job_annonce_pgm;
+	void * _job_annonce_ipc;
+	stringlist_t _workers;
 };
 
 } // end namespace nitro

@@ -7,6 +7,8 @@ namespace nitro {
 
 const int DEFAULT_PASSIVE_PORT = 47000;
 const int DEFAULT_ACTIVE_PORT = 47001;
+const char DEFAULT_ETHERNET_INTERFACE[] = "eth0";
+const char DEFAULT_IPC_ENDPOINT[] = "ipc:///tmp/nitro.pipe";
 
 /**
  * Parses nitro cmdline and provides logic to react.

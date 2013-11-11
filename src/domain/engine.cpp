@@ -17,6 +17,8 @@
 
 namespace nitro {
 
+const std::string engine::_subscription = "nitro";
+
 engine::engine(cmdline const & cmdline) :
 		ctx(_ctx), responder(_responder), publisher(_publisher),
 		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
@@ -38,7 +40,7 @@ engine::engine(cmdline const & cmdline) :
     int rc = zmq_bind(_publisher, inproc_endpoint.c_str());
     if (rc == 0) {
     	tcp_endpoint = interp("tcp://127.0.0.1:%1", publish_port);
-    	rc = zmq_bind(_publisher, tcp_endpoint.c_str());
+//    	rc = zmq_bind(_publisher, tcp_endpoint.c_str());
     }
     if (rc != 0) {
     	zmq_close(_publisher);

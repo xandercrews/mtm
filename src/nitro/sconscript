@@ -5,7 +5,7 @@ Import('jsoncpp')
 Import('zmq')
 
 prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[domain, base,
-	zmq, jsoncpp, 'pthread'])
+	zmq, jsoncpp, 'pthread', 'rt'])
 
 Return('prog')
 

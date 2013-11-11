@@ -4,6 +4,10 @@
 
 #include "gtest/gtest.h"
 
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+
 using namespace base::event_ids;
 
 TEST(batch_test, nonexistent_file) {
@@ -17,7 +21,7 @@ TEST(batch_test, nonexistent_file) {
 
 TEST(batch_test, readable_binary_file) {
 	try {
-		file_lines fl("/usr/bin/ls");
+		file_lines fl("/bin/ls");
 		ADD_FAILURE() << "Expected error_event about binary file.";
 	} catch (error_event const & e) {
 		ASSERT_EQ(e.get_event_id(), E_1FILE_BAD_SEEMS_BINARY);
@@ -25,8 +29,30 @@ TEST(batch_test, readable_binary_file) {
 }
 
 TEST(batch_test, empty_existing_file) {
+    // First, create a temporary txt file.
+    char buf[512];
+    strcpy(buf, "/tmp/batch_test_XXXXXX");
+    int handle = mkstemp(buf);
+    sprintf(buf, "/proc/self/fd/%d", handle);
+    ssize_t bytes_copied = readlink(buf, buf, sizeof(buf));
+    close(handle);
+    if (bytes_copied > 0) {
+            buf[bytes_copied] = 0;
+    } else {
+            FAIL() << "Couldn't create temp file.";
+    }
+
+    // Guarantee that the temp file is deleted no matter how we exit scope.
+    struct FileCleanup {
+            std::string fname;
+            FileCleanup(char const * fname) : fname(fname) {}
+            ~FileCleanup() {
+                    unlink(fname.c_str());
+            }
+    } fc(buf);
+
 	try {
-		file_lines fl("/tmp/");
+		file_lines fl(fc.fname.c_str());
 		ADD_FAILURE() << "Expected error_event about unreadable file.";
 	} catch (error_event const & e) {
 		ASSERT_EQ(e.get_event_id(), E_INPUT_FILE_1PATH_EMPTY);
