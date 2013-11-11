@@ -1,10 +1,3 @@
-/*
- * cmdline_test.cpp
- *
- *  Created on: Oct 24, 2013
- *      Author: dhardman
- */
-
 #include "domain/cmdline.h"
 #include "gtest/gtest.h"
 #include "test/test_util.h"

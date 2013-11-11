@@ -21,3 +21,6 @@
 .sconsign.dblite
 config.log
 build
+
+# Shell files
+.directory
