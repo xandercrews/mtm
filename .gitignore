@@ -21,3 +21,8 @@
 .sconsign.dblite
 config.log
 build
+
+# Intellij/IDEA/PyCharm artifacts
+.idea/
+*.iml
+*.iws
