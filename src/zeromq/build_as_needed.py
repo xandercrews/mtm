@@ -16,7 +16,7 @@ def main():
       if not os.path.isfile('configure'):
         run('autoconf')
       if not os.path.isfile('Makefile'):
-        run('./configure')
+        run('./configure --with-pgm')
       src = 'src/.libs/libzmq.a'
       if not os.path.isfile(src):
         run('make -j6')
