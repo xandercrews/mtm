@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <condition_variable>
 #include <thread>
 
@@ -40,6 +41,10 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 				hostlist.push_back(line);
 #endif
 
+			}
+			auto pargs = cmdline.get_positional_args();
+			for (auto batch: pargs) {
+				batches.push_back(batch);
 			}
 			return;
 		} catch (error_event const & e) {
@@ -86,17 +91,54 @@ void coord_engine::enroll_workers(int eid) {
 	}
 }
 
-int coord_engine::do_run() {
-	// This is totally the wrong way to do dispatch of assignments. I'm
-	// completely abusing zmq by short-circuiting its own fair share routing
-	// and by creating and destroying sockets right and left. I've only done
-	// it this way to get some logic running that I can improve incrementally.
+coord_engine::assignment_t coord_engine::next_assignment() {
+	const auto MAX_SIZE = 1000;
+	assignment_t new_a;
+	while (true) {
+		if (!current_batch_file) {
+			if (batches.empty()) {
+				return new_a;
+			} else {
+				auto fl = new file_lines(batches.front().c_str());
+				current_batch_file = std::unique_ptr<file_lines>(fl);
+				batches.erase(batches.begin());
+			}
+		}
+		while (true) {
+			auto line = current_batch_file->next();
+			if (line) {
+				if (!new_a) {
+					new_a = assignment_t(new stringlist_t);
+				}
+				new_a->push_back(line);
+				if (new_a->size() >= MAX_SIZE) {
+					return new_a;
+				}
+			} else {
+				current_batch_file.reset();
+			}
+		}
+	}
+}
 
-	enroll_workers(NITRO_REQUEST_HELP);
+void coord_engine::prioritize(assignment_t & asgn) {
+	// This is just a demo of doing a sort.
+	struct priority_func {
+		int operator ()(std::string const & a, std::string const & b) {
+			// Here we could parse strings a and b and see if userprio was set,
+			// and generate a sort key for each. In the long run, we probably
+			// want to change the assignment_t datatype so it's not a list of
+			// strings, but rather a list of parsed data that already has
+			// sort key calculated.
+			return a.size() - b.size();
+		}
+	};
+	std::sort((*asgn).begin(), (*asgn).end(), priority_func());
+}
 
+void coord_engine::distribute(assignment_t & asgn) {
 	auto host = hostlist.begin();
-    for (int i = 0; i < 1000; ++i) {
-		auto cmd = interp("fake commandline %1", i + 1);
+    for (auto cmd : *asgn) {
 		auto endpoint = interp("tcp://%1", *host);
 		void * requester;
     	try {
@@ -116,14 +158,34 @@ int coord_engine::do_run() {
     		zmq_close(requester);
     	}
     }
+}
+
+int coord_engine::do_run() {
+	// This is totally the wrong way to do dispatch of assignments. I'm
+	// completely abusing zmq by short-circuiting its own fair share routing
+	// and by creating and destroying sockets right and left. I've only done
+	// it this way to get some logic running that I can improve incrementally.
+
+	enroll_workers(NITRO_REQUEST_HELP);
+
+	while (true) {
+		auto assignment = next_assignment();
+		if (!assignment) {
+			break;
+		}
+		prioritize(assignment);
+		// who's not busy?
+		distribute(assignment);
+	}
 
 	enroll_workers(NITRO_TERMINATE_REQUEST);
 	this_thread::sleep_for(chrono::milliseconds(100));
 	int linger = 0;
 	zmq_setsockopt(requester, ZMQ_LINGER, &linger, sizeof(linger));
 	zmq_close(requester);
-	xlog("Completed batch.");
-    return 0;
+	xlog("Completed all batches.");
+
+	return 0;
 }
 
 #if 0

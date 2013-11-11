@@ -5,6 +5,8 @@
 #include <mutex>
 #include <vector>
 
+#include "base/file_lines.h"
+
 #include "domain/engine.h"
 
 namespace nitro {
@@ -20,9 +22,14 @@ public:
 
 	virtual int do_run();
 
-	typedef std::vector<std::string> hostlist_t;
-	hostlist_t const & get_hostlist() const;
+	typedef std::vector<std::string> stringlist_t;
+	typedef std::unique_ptr<stringlist_t> assignment_t;
 
+	stringlist_t const & get_hostlist() const;
+
+	assignment_t next_assignment();
+	void prioritize(assignment_t & asgn);
+	void distribute(assignment_t & asgn);
 	void enroll_workers(int eid);
 
 	/**
@@ -35,7 +42,9 @@ public:
 	typedef std::unique_ptr<coord_engine> handle;
 
 private:
-	hostlist_t hostlist;
+	std::unique_ptr<file_lines> current_batch_file;
+	stringlist_t hostlist;
+	stringlist_t batches;
 	void * requester;
 };
 
