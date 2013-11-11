@@ -1,0 +1,74 @@
+import os, shutil, sys, datetime, math
+Import('env')
+
+git_version = os.popen('git rev-parse --verify HEAD').read()[0:10]
+thetime = datetime.datetime.now().strftime('%Y%m%d.%H%M%S')
+
+version_string = "%s.%s" % (thetime, git_version)
+
+archinfo = dict([ tuple(line.strip().split('=',2)) for line in os.popen('dpkg-architecture').readlines() ])
+
+DEBNAME = "moabtm"
+DEBVERSION = version_string
+DEBMAINT = "Adaptive Computing [info@adaptivecomputing.com]"
+DEBARCH = archinfo['DEB_HOST_ARCH']
+DEBDEPENDS = "python-zmq"
+DEBDESC = "Moab Task Manager micro scheduler"
+
+DEBFILES = [
+    ('usr/bin/nitro', '#build/nitro/nitro'),
+    ('usr/bin/nitro-testrunner', '#build/test/nitro-testrunner'),
+    ('usr/bin/fake_worker.py', '#fake_worker.py'),
+]
+
+debpkg = '#%s-%s-%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
+
+env.Alias('debian', debpkg)
+
+DEBCONTROLFILE = os.path.join(DEBNAME, "DEBIAN/control")
+
+# copies files into place
+for target, source in DEBFILES:
+    dest = os.path.join(DEBNAME, target)
+    # express deb package depends on building the copied files
+    env.Depends(debpkg, dest)
+    # copy files, scons will create empty directories
+    env.Command(dest, source, Copy('$TARGET', '$SOURCE'))
+    env.Depends(DEBCONTROLFILE, dest)
+
+# create control file
+
+CONTROL_TEMPLATE = """
+Package: %s
+Priority: extra
+Section: misc
+Installed-Size: %s
+Maintainer: %s
+Architecture: %s
+Version: %s
+Depends: %s
+Description: %s
+"""
+
+env.Depends(debpkg, DEBCONTROLFILE)
+env.Depends(debpkg, env.Value(git_version))
+
+def make_control(target=None, source=None, env=None):
+    installed_size = 0
+    for f in DEBFILES:
+        installed_size += os.stat(str(env.File(f[1])))[6]
+
+    installed_size = int(math.ceil(float(installed_size) / 1024))
+
+    control_info = CONTROL_TEMPLATE % (DEBNAME, installed_size, DEBMAINT, DEBARCH, DEBVERSION, DEBDEPENDS, DEBDESC)
+
+    with open(str(target[0]), 'w') as fh:
+        fh.write(control_info)
+
+# generate the control file
+env.Command(DEBCONTROLFILE, None, make_control)
+
+# generate the .deb with fakeroot
+env.Command(debpkg, DEBCONTROLFILE, 'fakeroot dpkg-deb -b %s %s' % ('deb/%s' % DEBNAME, '$TARGET'))
+
+# vim: set ts=4 sw=4 expandtab:

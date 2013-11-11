@@ -110,6 +110,8 @@ def PhonyTargets(env = None, **kwargs):
 
 PhonyTargets(env, test = ([testrunner],'build/test/nitro-testrunner',))
 
+if 'debian' in COMMAND_LINE_TARGETS:
+	SConscript('deb/sconscript')
 
 # -------------------- gory and mostly uninteresting details --------------------
 
