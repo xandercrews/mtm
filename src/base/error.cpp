@@ -114,7 +114,7 @@ error_event::error_event(int eid, char const * source_fname,
 	source_func(source_func ? source_func : ""), source_line(source_line) {
 }
 
-error_event::~error_event() {
+error_event::~error_event() noexcept {
 }
 
 int error_event::get_event_id() const {

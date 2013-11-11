@@ -13,7 +13,7 @@
  */
 class error_event: public std::runtime_error {
 public:
-	virtual ~error_event();
+	virtual ~error_event() noexcept;
 	/**
 	 * Create an error with an event, plus an arbitrary number of args of any
 	 * data type.
