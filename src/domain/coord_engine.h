@@ -24,6 +24,7 @@ public:
 	hostlist_t const & get_hostlist() const;
 
 	void enroll_workers(int eid);
+  void enroll_workers_multi(int eid);
 
 	/**
 	 * An engine handle manages the lifetime of an engine instance. When the
@@ -37,6 +38,9 @@ public:
 private:
 	hostlist_t hostlist;
 	void * requester;
+  void * _job_annonce_pgm;
+  void * _job_annonce_ipc;
+  hostlist_t _workers;
 };
 
 } // end namespace nitro
