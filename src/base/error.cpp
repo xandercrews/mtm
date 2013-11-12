@@ -117,7 +117,7 @@ error_event::error_event(int eid, char const * source_fname,
 error_event::~error_event() noexcept {
 }
 
-int error_event::get_event_id() const {
+int error_event::get_event_code() const {
 	return event_id;
 }
 

@@ -1,88 +1,52 @@
-#include "base/error.h"
-#include "base/event_ids.h"
-#include "base/file_lines.h"
-
-#include "gtest/gtest.h"
-
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 
-using namespace base::event_ids;
+#include "base/error.h"
+#include "base/event_codes.h"
+#include "base/file_lines.h"
 
-TEST(batch_test, nonexistent_file) {
+#include "gtest/gtest.h"
+
+#include "test/test_util.h"
+
+using namespace base::event_codes;
+
+TEST(file_lines_test, nonexistent_file) {
 	try {
 		file_lines fl("doesn't@exist");
 		ADD_FAILURE() << "Expected error_event about unavailable file.";
 	} catch (error_event const & e) {
-		ASSERT_EQ(e.get_event_id(), E_INPUT_FILE_1PATH_UNREADABLE);
+		ASSERT_EQ(e.get_event_code(), E_INPUT_FILE_1PATH_UNREADABLE);
 	}
 }
 
-TEST(batch_test, readable_binary_file) {
+TEST(file_lines_test, readable_binary_file) {
 	try {
 		file_lines fl("/bin/ls");
 		ADD_FAILURE() << "Expected error_event about binary file.";
 	} catch (error_event const & e) {
-		ASSERT_EQ(e.get_event_id(), E_1FILE_BAD_SEEMS_BINARY);
+		ASSERT_EQ(e.get_event_code(), E_1FILE_BAD_SEEMS_BINARY);
 	}
 }
 
-TEST(batch_test, empty_existing_file) {
-    // First, create a temporary txt file.
-    char buf[512];
-    strcpy(buf, "/tmp/batch_test_XXXXXX");
-    int handle = mkstemp(buf);
-    sprintf(buf, "/proc/self/fd/%d", handle);
-    ssize_t bytes_copied = readlink(buf, buf, sizeof(buf));
-    close(handle);
-    if (bytes_copied > 0) {
-            buf[bytes_copied] = 0;
-    } else {
-            FAIL() << "Couldn't create temp file.";
-    }
-
-    // Guarantee that the temp file is deleted no matter how we exit scope.
-    struct FileCleanup {
-            std::string fname;
-            FileCleanup(char const * fname) : fname(fname) {}
-            ~FileCleanup() {
-                    unlink(fname.c_str());
-            }
-    } fc(buf);
-
+TEST(file_lines_test, empty_existing_file) {
+	auto temp_file = make_temp_file();
+	FileCleanup fc(temp_file.c_str());
 	try {
-		file_lines fl(fc.fname.c_str());
+		file_lines fl(temp_file.c_str());
 		ADD_FAILURE() << "Expected error_event about unreadable file.";
 	} catch (error_event const & e) {
-		ASSERT_EQ(e.get_event_id(), E_INPUT_FILE_1PATH_EMPTY);
+		ASSERT_EQ(e.get_event_code(), E_INPUT_FILE_1PATH_EMPTY);
 	}
 }
 
-TEST(batch_test, text_file) {
-	// First, create a temporary txt file.
+TEST(file_lines_test, text_file) {
+	auto temp_file = make_temp_file();
+	FileCleanup fc(temp_file.c_str());
+	FILE * f = fopen(temp_file.c_str(), "w");
+
 	char buf[512];
-	strcpy(buf, "/tmp/batch_test_XXXXXX");
-	int handle = mkstemp(buf);
-	sprintf(buf, "/proc/self/fd/%d", handle);
-	ssize_t bytes_copied = readlink(buf, buf, sizeof(buf));
-	close(handle);
-	if (bytes_copied > 0) {
-		buf[bytes_copied] = 0;
-	} else {
-		FAIL() << "Couldn't create temp file.";
-	}
-
-	// Guarantee that the temp file is deleted no matter how we exit scope.
-	struct FileCleanup {
-		std::string fname;
-		FileCleanup(char const * fname) : fname(fname) {}
-		~FileCleanup() {
-			unlink(fname.c_str());
-		}
-	} fc(buf);
-
-	FILE * f = fopen(buf, "w");
 	buf[0] = 0;
 	char const * LINE = "Here's a happy line";
 	for (int i = 0; i < 5; ++i) {
@@ -105,12 +69,83 @@ TEST(batch_test, text_file) {
 	fwrite(buf, 1, strlen(buf), f);
 	fclose(f);
 
-	// Now see if we get exactly 4 identical lines. (The 5th line that we wrote
-	// was preceded by a comment and should be skipped.)
-	file_lines fl(fc.fname.c_str());
-	for (int i = 0; i < 4; ++i) {
+	// Now see if we get the lines we expect (a few blank ones, plus a few
+	// where our "seed" line value shows up in one form or another).
+	file_lines fl(fc.fname.c_str(), true, true);
+	EXPECT_EQ(0, fl.get_current_line_num());
+	int valid_line_count = 0;
+	int blank_line_count = 0;
+	for (int i = 0; i < 20; ++i) {
 		char const * line = fl.next();
-		ASSERT_STREQ(LINE, line);
+		if (!line) {
+			// Don't break, but just ignore input; we do this to make sure
+			// repeatedly calling at EOF doesn't cause problems.
+		} else if (*line) {
+			if (*line == '#') {
+				++line;
+			}
+			EXPECT_STREQ(LINE, line);
+			++valid_line_count;
+		} else {
+			++blank_line_count;
+		}
 	}
-	ASSERT_STREQ(NULL, fl.next());
+	EXPECT_EQ(5, valid_line_count);
+	EXPECT_EQ(4, blank_line_count);
+	EXPECT_EQ(9, fl.get_current_line_num());
+	EXPECT_STREQ(NULL, fl.next());
+}
+
+// Undocumented but used by unit tests to artificially test boundaries without
+// having to use massive amounts of RAM and do lots of I/O. This is the only
+// gulp size < 64k that file_lines will accept.
+const size_t TESTING_GULP_SIZE = 40;
+
+TEST(file_lines_test, line_bigger_than_gulp) {
+	auto temp_file = make_temp_file();
+	FileCleanup fc(temp_file.c_str());
+	FILE * f = fopen(temp_file.c_str(), "w");
+	char const * const FORTY_CHARS = ".123456789.123456789.123456789.123456789";
+
+	char buf[128];
+	memset(buf, 'x', 19);
+	buf[19] = ' ';
+	strcpy(buf + 20, FORTY_CHARS);
+	strcat(buf + 60, "\nabc");
+	fwrite(buf, 1, strlen(buf), f);
+	fclose(f);
+
+	try {
+		// Since we have a line that's longer than 40 chars, we should get
+		// an exception about the file having lines that are too long. In
+		// production, this exception could happen in the ctor or any time
+		// thereafter when we do another gulp. In this test, we've forced it
+		// to occur on the first gulp.
+		file_lines fl(fc.fname.c_str(), false, false, TESTING_GULP_SIZE);
+		ADD_FAILURE() << "Expected block to throw an error_event.";
+	} catch (error_event const & e) {
+		EXPECT_EQ(E_1FILE_BAD_HUGE_LINE_2BYTES, e.get_event_code());
+	}
+}
+
+TEST(file_lines_test, line_spanning_gulp) {
+	auto temp_file = make_temp_file();
+	FileCleanup fc(temp_file.c_str());
+	FILE * f = fopen(temp_file.c_str(), "w");
+
+	char buf[128];
+	memset(buf, 'x', 35);
+	strcpy(buf + 35, "\nabcdefgjijklmnop \r\n xyz\n");
+	fwrite(buf, 1, strlen(buf), f);
+	fclose(f);
+
+	file_lines fl(fc.fname.c_str(), false, false, TESTING_GULP_SIZE);
+	auto line = fl.next();
+	EXPECT_EQ(35, strlen(line));
+	line = fl.next();
+	EXPECT_STREQ("abcdefgjijklmnop ", line);
+	line = fl.next();
+	EXPECT_STREQ(" xyz", line);
+	line = fl.next();
+	EXPECT_STREQ(nullptr, line);
 }

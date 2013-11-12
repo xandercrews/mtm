@@ -1,7 +1,7 @@
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 
 namespace base {
-	namespace event_ids {
+	namespace event_codes {
 
 	event_data const ITEMS[] = {
 		#define EVENT(name, severity, escal, num, topic, msg, comments) \

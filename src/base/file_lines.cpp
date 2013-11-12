@@ -9,10 +9,10 @@ using std::max;
 
 #include "base/interp.h"
 #include "base/error.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 #include "base/file_lines.h"
 
-using namespace base::event_ids;
+using namespace base::event_codes;
 
 /**
  * How much will we read from a file_lines file at any given time?
@@ -58,15 +58,19 @@ struct file_lines::data_t {
 	size_t buf_offset;
 	size_t buf_filled_count;
 	size_t gulp_count;
+	size_t line_num;
+	bool ltrim;
+	bool rtrim;
 
-	data_t(char const * _fname, size_t gulp_size) :
+	data_t(char const * _fname, bool ltrim, bool rtrim, size_t gulp_size) :
 		fname(_fname), f(NULL),	flen(0), foffset(0),
 		gulp_size(gulp_size ?
 				(gulp_size == TESTING_GULP_SIZE ?
 						TESTING_GULP_SIZE :
 						max(MIN_GULP_SIZE, min(MAX_GULP_SIZE, gulp_size))) :
 				MAX_GULP_SIZE),
-		buf(NULL), buf_offset(0), buf_filled_count(0), gulp_count(0) {
+		buf(NULL), buf_offset(0), buf_filled_count(0), gulp_count(0),
+		line_num(0), ltrim(ltrim), rtrim(rtrim) {
 
 		f = fopen(_fname, "r");
 		if (f) {
@@ -101,7 +105,7 @@ struct file_lines::data_t {
 
 	/**
 	 * Read another chunk of buf from the file. This should only be called
-	 * when the buf buffer is totally empty.
+	 * when the current buffer is empty.
 	 */
 	bool gulp() {
 		if (f == NULL) {
@@ -121,9 +125,14 @@ struct file_lines::data_t {
 			buf = new char[min(flen + 1, gulp_size)];
 		}
 
-		// Read as much as is appropriate.
-		uint64_t bytes_remaining = flen - foffset;
-		uint64_t intended_bytes_read = min(bytes_remaining, gulp_size - 1);
+		// How much is left to read in the file?
+		uint64_t file_bytes_remaining = flen - foffset;
+
+		// Read as much as we can swallow right now, still allowing for a null
+		// terminator.
+		uint64_t intended_bytes_read = min(file_bytes_remaining,
+				gulp_size - 1);
+
 		uint64_t bytes_read = fread(buf, 1, intended_bytes_read, f);
 
 		// Check for binary file on first gulp.
@@ -140,12 +149,12 @@ struct file_lines::data_t {
 		buf_filled_count = bytes_read;
 
 		// Make sure our buffer is null-terminated. At the time we call this,
-		// buf + bytes_read is guaranteed to be a valid location for us to
-		// write (it's not past the end of our buf buffer). We may write our
+		// dest + bytes_read is guaranteed to be a valid location for us to
+		// write (it's not past the end of our buffer). We may write our
 		// null there--but only if we've exhausted our file. Otherwise, we
 		// write a null on top of the final line break among the stuff we've
 		// read.
-		uint64_t bytes_remaining_after_read = bytes_remaining - bytes_read;
+		uint64_t bytes_remaining_after_read = file_bytes_remaining - bytes_read;
 		bool file_exhausted = (bytes_remaining_after_read == 0);
 		char * end = file_exhausted ?
 				buf + bytes_read :
@@ -164,15 +173,21 @@ struct file_lines::data_t {
 		*end = 0;
 
 		// Reset file cursor to offset of our null char, so our next read picks
-		// up on a line boundary.
+		// up on a line boundary. This is slightly inefficient and could be
+		// optimized, but its virtue is that it guarantees that we don't have
+		// to memmove() some trailing stuff from our last read into buf; we
+		// always read on line break boundaries.
 		if (!file_exhausted) {
+			// If what we read didn't end on a line break...
 			if (end < buf + bytes_read) {
-				fseek(f, (buf + bytes_read) - end, SEEK_CUR);
+				auto extra_bytes = (buf + bytes_read) - (end + 1);
+				fseek(f, -extra_bytes, SEEK_CUR);
 				foffset = ftell(f);
+				buf_filled_count -= extra_bytes;
 			}
 		} else {
 			// Close file handle immediately rather than keeping it open
-			// while we process the final lines of the file_lines. This is not
+			// while we process the final lines of the file. This is not
 			// the same as calling cleanup() -- we still want the data that's
 			// in buf...
 			fclose(f);
@@ -183,37 +198,44 @@ struct file_lines::data_t {
 };
 
 inline char * start_of_next_line(char * buf) {
-	while (true) {
-		auto c = *buf;
-		switch (c) {
-		case 0:
-			return 0;
-		case '\n':
-		case '\r':
-		case '\t':
-		case ' ':
-			++buf;
-			break;
-		case '#':
-			if (auto p = strpbrk(buf, "\n\r")) {
-				buf = p + 1;
-				break;
-			} else {
-				return 0;
-			}
-		default:
-			return buf;
-		}
+	auto c = *buf;
+	switch (c) {
+	case 0:
+		return 0;
+	case '\n':
+		return buf + 1;
+	case '\r':
+		return (buf[1] == '\n') ? buf + 2 : buf + 1;
+	default:
+		return buf;
 	}
 }
 
-inline void rtrim_line(char * end) {
-	// We start with the first char beyond current line (which may be the final
-	// terminating null). We back up *before* we test the char value, not after.
-	do { --end; } while (isspace(*end));
-	// It's impossible for us to underflow, because we know that start pointed
-	// at something valid. So it's safe to write a null.
-	end[1] = 0;
+inline void rtrim_line(const char * start, char * end) {
+	// end points to null terminator or to line break char when we enter.
+	// When we finish, we want it to point to a place where we can write
+	// a null byte.
+	do {
+		--end;
+	} while (end >= start && isspace(*end));
+	// It's possible for end to be before start when we get here, if end
+	// equaled start at the top of our loop. But underflow is harmless
+	// because we're going to write one byte *after* end. That's guaranteed
+	// to be a safe place--either because it was the original terminating
+	// null, a line break char, or a trailing whitespace char that we can
+	// clobber.
+	*++end = 0;
+}
+
+size_t file_lines::get_current_line_num() const {
+	return data->line_num;
+}
+
+inline char * ltrim(char * txt) {
+	while (isspace(*txt)) {
+		++txt;
+	}
+	return txt;
 }
 
 char const * file_lines::next() {
@@ -228,20 +250,45 @@ char const * file_lines::next() {
 		}
 
 		while (true) {
-			auto ltrim = start_of_next_line(start);
-			if (start && start < end_of_current_gulp && ltrim) {
-				auto end = strpbrk(ltrim, "\n\r");
-				// No more line breaks?
+			if (start && start < end_of_current_gulp) {
+				auto end = strpbrk(start, "\n\r");
 				if (end == NULL) {
-					end = strchr(ltrim, 0);
+					end = strchr(start, 0);
 				}
-				rtrim_line(end);
+
+				// Handle windows-style CR+LF.
+				auto double_break = false;
+				if (*end == '\r') {
+					if (end[1] == '\n') {
+						double_break = true;
+						++end;
+					}
+				}
+
+				// Trim and null terminate as needed. We do trimming here not
+				// because it's necessary, but because it's more efficient than
+				// trimming after we return the string.
+				*end = 0;
+				if (data->rtrim) {
+					rtrim_line(start, end);
+				} else {
+					if (double_break) {
+						end[-1] = 0;
+					}
+				}
+				if (data->ltrim) {
+					start = ltrim(start);
+				}
+
 				data->buf_offset = end - data->buf;
-				return ltrim;
+				++data->line_num;
+				return start;
+
 			} else {
 				if (!data->gulp()) {
 					return NULL;
 				}
+				start = data->buf;
 				end_of_current_gulp = data->buf + data->buf_filled_count;
 			}
 		}
@@ -257,9 +304,10 @@ double file_lines::ratio_complete() const {
 			static_cast<double>(data->flen);
 }
 
-file_lines::file_lines(char const * fname, size_t gulp_size) : data(0) {
+file_lines::file_lines(char const * fname, bool ltrim, bool rtrim,
+		size_t gulp_size) : data(0) {
 	if (fname && *fname) {
-		data = new data_t(fname, gulp_size);
+		data = new data_t(fname, ltrim, rtrim, gulp_size);
 	} else {
 		throw ERROR_EVENT(E_BAD_FNAME_NULL_OR_EMPTY);
 	}
@@ -284,7 +332,8 @@ bool data_seems_binary(char const * begin, char const * end) {
 
 char * last_line_break(char * p, char const * begin) {
 	do {
-		if (*p == '\n') {
+		char c = *p;
+		if ((c == '\n') || (c == '\r')) {
 			return p;
 		}
 	} while (--p > begin);

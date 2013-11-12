@@ -2,9 +2,9 @@
 #include <errno.h>
 
 #include "gtest/gtest.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 #include "base/interp.h"
-#include "domain/event_ids.h"
+#include "domain/event_codes.h"
 #include "test/test_util.h"
 
 using namespace std;
@@ -17,7 +17,7 @@ TEST(event_test, no_dups) {
 	auto dm = catalog.get_items();
 	for (auto i = dm.begin(); i != dm.end(); ++i) {
 		auto item = **i;
-		auto id = item.id;
+		auto id = item.code;
 		auto name = item.name;
 		if (names_by_number.find(id) == names_by_number.end()) {
 			names_by_number[id] = name;
@@ -32,7 +32,7 @@ TEST(event_test, valid_names_and_argrefs) {
 	auto dm = catalog.get_items();
 	for (auto i = dm.begin(); i != dm.end(); ++i) {
 		auto item = **i;
-		auto id = item.id;
+		auto id = item.code;
 		auto name = item.name;
 		for (auto p = name; *p; ++p) {
 			if (toupper(*p) != *p) {
@@ -155,7 +155,7 @@ TEST(event_test, valid_names_and_argrefs) {
 }
 
 TEST(event_test, known_event_properties) {
-	auto e = base::event_ids::E_NOT_IMPLEMENTED;
+	auto e = base::event_codes::E_NOT_IMPLEMENTED;
 	EXPECT_STREQ("E_NOT_IMPLEMENTED", catalog.get_symbolic_name(e));
 	EXPECT_EQ(sev_error, catalog.get_severity(e));
 	EXPECT_EQ(kc_base, catalog.get_component(e));
@@ -168,12 +168,12 @@ TEST(event_test, known_event_properties) {
 }
 
 TEST(event_test, multi_arg_count) {
-	auto e = base::event_ids::E_1FILE_BAD_HUGE_LINE_2BYTES;
+	auto e = base::event_codes::E_1FILE_BAD_HUGE_LINE_2BYTES;
 	EXPECT_EQ(2, catalog.get_arg_count(e));
 }
 
-eid_t get_foreign_event_id() {
-	return static_cast<eid_t>(
+ecode_t get_foreign_event_id() {
+	return static_cast<ecode_t>(
 			static_cast<int>(sev_warning) << 28
 			| static_cast<int>(kc_mwm) << 16
 			| static_cast<int>(esc_poweruser) << 14

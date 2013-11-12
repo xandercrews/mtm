@@ -1,7 +1,7 @@
-#include "domain/event_ids.h"
+#include "domain/event_codes.h"
 
 namespace nitro {
-namespace event_ids {
+namespace event_codes {
 
 event_data const ITEMS[] = {
 	#define EVENT(name, severity, escal, num, topic, msg, comments) \

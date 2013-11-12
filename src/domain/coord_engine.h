@@ -31,7 +31,7 @@ public:
 	void prioritize(assignment_t & asgn);
 	void distribute(assignment_t & asgn);
 	void enroll_workers(int eid);
-  void enroll_workers_multi(int eid);
+	void enroll_workers_multi(int eid);
 
 	/**
 	 * An engine handle manages the lifetime of an engine instance. When the

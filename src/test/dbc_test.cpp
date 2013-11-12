@@ -1,8 +1,11 @@
 #include "base/dbc.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
+
 #include "gtest/gtest.h"
 
-using namespace base::event_ids;
+#include "test/test_util.h"
+
+using namespace base::event_codes;
 
 TEST(dbc_test, pre_and_check_satisfied) {
 	// Should not throw.
@@ -24,21 +27,14 @@ TEST(dbc_test, post_satisfied) {
 }
 
 TEST(dbc_test, failed_precondition) {
-	try {
-		PRECONDITION(nullptr);
-		ADD_FAILURE() << "Expected PRECONDITION to fail.";
-	} catch (error_event const & e) {
-		EXPECT_EQ(E_PRECONDITION_1EXPR_VIOLATED, e.get_event_id());
-	}
+	EXPECT_THROW_WITH_CODE(PRECONDITION(nullptr),
+			E_PRECONDITION_1EXPR_VIOLATED);
 }
 
 TEST(dbc_test, failed_check) {
-	try {
-		CHECK("this is a sentence that ends in a period" && false);
-		ADD_FAILURE() << "Expected CHECK to fail.";
-	} catch (error_event const & e) {
-		EXPECT_EQ(E_CHECK_1EXPR_VIOLATED, e.get_event_id());
-	}
+	EXPECT_THROW_WITH_CODE(CHECK(
+			"this is a sentence that ends in a period" && false),
+			E_CHECK_1EXPR_VIOLATED);
 }
 
 #if 0
@@ -49,7 +45,7 @@ TEST(dbc_test, failed_postcondition) {
 		POSTCONDITION(i > j);
 		ADD_FAILURE() << "Expected POSTCONDITION to fail.";
 	} catch (error_event const & e) {
-		EXPECT_EQ(E_POSTCONDITION_1EXPR_VIOLATED, e.get_event_id());
+		EXPECT_EQ(E_POSTCONDITION_1EXPR_VIOLATED, e.get_event_code());
 	}
 }
 #endif

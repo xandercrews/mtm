@@ -10,13 +10,13 @@
 
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
-#include "domain/event_ids.h"
+#include "domain/event_codes.h"
 #include "domain/msg.h"
 
 #include "zeromq/include/zmq.h"
 
 using namespace std;
-using namespace nitro::event_ids;
+using namespace nitro::event_codes;
 
 namespace nitro {
 

@@ -2,12 +2,12 @@
 
 #include "gtest/gtest.h"
 #include "base/error.h"
-#include "base/event_ids.h"
-#include "domain/event_ids.h"
+#include "base/event_codes.h"
+#include "domain/event_codes.h"
 #include "test/test_util.h"
 
-using namespace base::event_ids;
-using namespace nitro::event_ids;
+using namespace base::event_codes;
+using namespace nitro::event_codes;
 
 TEST(error_test, simple) {
 	auto n = __LINE__; auto e = ERROR_EVENT(E_NOT_IMPLEMENTED);

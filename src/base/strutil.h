@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+
 /// trim from start
 std::string & ltrim(std::string &s);
 

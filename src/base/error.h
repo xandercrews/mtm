@@ -30,7 +30,7 @@ public:
 	// exceptional--they are not a "common case" that we have to make fast.
 
 	// Allow other code to lookup information about the error.
-	int get_event_id() const;
+	int get_event_code() const;
 	char const * get_source_fname() const;
 	char const * get_source_func() const;
 	unsigned get_source_line() const;

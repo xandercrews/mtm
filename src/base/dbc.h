@@ -4,7 +4,7 @@
 #include <boost/scope_exit.hpp>
 
 #include "base/error.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 
 /**
  * Provide support for "design by contract", which allows functions to declare
@@ -38,7 +38,7 @@
  */
 #define PRECONDITION(expr) if (!(expr)) \
 	CONTRACT_VIOLATION_ACTION(\
-			base::event_ids::E_PRECONDITION_1EXPR_VIOLATED, #expr)
+			base::event_codes::E_PRECONDITION_1EXPR_VIOLATED, #expr)
 
 /**
  * A check is a way for paranoid callers to verify the behavior of called
@@ -46,7 +46,7 @@
  */
 #define CHECK(expr) if (!(expr)) \
 	CONTRACT_VIOLATION_ACTION(\
-			base::event_ids::E_CHECK_1EXPR_VIOLATED, #expr)
+			base::event_codes::E_CHECK_1EXPR_VIOLATED, #expr)
 
 /**
  * A postcondition is a guarantee that a function makes on exit. When
@@ -66,7 +66,7 @@
 	BOOST_SCOPE_EXIT_ALL(&) { \
 		if (!(expr)) { \
 			CONTRACT_VIOLATION_ACTION( \
-					base::event_ids::E_POSTCONDITION_1EXPR_VIOLATED, #expr); \
+					base::event_codes::E_POSTCONDITION_1EXPR_VIOLATED, #expr); \
 		} \
 	}
 

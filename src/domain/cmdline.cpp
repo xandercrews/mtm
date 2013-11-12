@@ -9,9 +9,9 @@
 
 #include "base/interp.h"
 #include "domain/cmdline.h"
-#include "domain/event_ids.h"
+#include "domain/event_codes.h"
 
-using namespace nitro::event_ids;
+using namespace nitro::event_codes;
 
 namespace nitro {
 

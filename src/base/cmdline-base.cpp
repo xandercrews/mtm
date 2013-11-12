@@ -2,9 +2,9 @@
 
 #include "base/cmdline-base.h"
 #include "base/interp.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 
-using namespace base::event_ids;
+using namespace base::event_codes;
 
 bool in_alternatives_str(char const * item, char const * alternatives) {
 	if (item && *item && alternatives && *alternatives) {

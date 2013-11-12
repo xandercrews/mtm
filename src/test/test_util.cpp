@@ -18,3 +18,18 @@ void expect_str_contains(std::string const & haystack, char const * needle,
 		bool expected) {
 	expect_str_contains(haystack.c_str(), needle, expected);
 }
+
+std::string make_temp_file() {
+	char buf[512];
+	strcpy(buf, "/tmp/test_XXXXXX");
+	int handle = mkstemp(buf);
+	sprintf(buf, "/proc/self/fd/%d", handle);
+	ssize_t bytes_copied = readlink(buf, buf, sizeof(buf));
+	close(handle);
+	if (bytes_copied > 0) {
+		buf[bytes_copied] = 0;
+	} else {
+		ADD_FAILURE() << "Couldn't create temp file.";
+	}
+	return buf;
+}

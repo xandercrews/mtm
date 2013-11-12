@@ -2,7 +2,7 @@
 #include <thread>
 
 #include "base/dbc.h"
-#include "base/event_ids.h"
+#include "base/event_codes.h"
 #include "base/guid.h"
 #include "base/interp.h"
 #include "base/xlog.h"
@@ -10,7 +10,7 @@
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
 #include "domain/engine.h"
-#include "domain/event_ids.h"
+#include "domain/event_codes.h"
 #include "domain/worker_engine.h"
 
 #include "zeromq/include/zmq.hpp"

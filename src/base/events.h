@@ -73,7 +73,7 @@ enum escalation_t {
  * A type for the unique identifiers for every event we can describe. We only
  * define the type here, not its possible values.
  */
-enum eid_t {
+enum ecode_t {
 	SUCCESS = 0
 };
 
@@ -84,7 +84,7 @@ enum eid_t {
  */
 class event_data {
 public:
-	eid_t id;
+	ecode_t code;
 	char const * name;
 	severity_t sev;
 	escalation_t esc;
@@ -104,41 +104,41 @@ public:
 	 * @return the symbolic name for a particular event, if known to this
 	 * codebase, or the empty string for external events.
 	 */
-	char const * get_symbolic_name(int eid) const;
+	char const * get_symbolic_name(int ecode) const;
 
 	/**
 	 * @return the {@link Severity} for a particular event.
 	 */
-	static severity_t get_severity(int eid);
+	static severity_t get_severity(int ecode);
 
 	/**
 	 * @return a user-friendly label for the severity implied by an event id.
 	 *     This function is aware of the fact that all posix events are errors.
 	 */
-	static const char * get_severity_label(int eid);
+	static const char * get_severity_label(int ecode);
 
 	/**
 	 * @return the {@link Escalation} for a particular event.
 	 */
-	static escalation_t get_escalation(int eid);
+	static escalation_t get_escalation(int ecode);
 
 	/**
 	 * @return the 13-bit number that's unique to all events in a given codebase,
 	 *     but not unique across all codebases.
 	 */
-	static int get_nonunique_number(int eid);
+	static int get_nonunique_number(int ecode);
 
 	/**
 	 * @return the identifier for the codebase that originated an event.
 	 * @see KnownComponent
 	 */
-	static known_component_t get_component(int eid);
+	static known_component_t get_component(int ecode);
 
 	/**
 	 * @return the topic for an event, if known to this codebase, or the empty
 	 *     string for external events.
 	 */
-	char const * get_topic(int eid) const;
+	char const * get_topic(int ecode) const;
 
 	/**
 	 * @return the interp-style message string associated with a particular event,
@@ -148,7 +148,7 @@ public:
 	 *     most of the other event-handling methods here), because how messages
 	 *     are looked up differs.
 	 */
-	char const * get_msg(eid_t event) const;
+	char const * get_msg(ecode_t event) const;
 
 	/**
 	 * Overload of get_msg() for posix errors. Unlike the other version, this one
@@ -157,19 +157,19 @@ public:
 	 * recognized, a placeholder value is used. Can be called with ordinary
 	 * event ids as well, if a string is desired.
 	 */
-	std::string get_msg(int eid) const;
+	std::string get_msg(int ecode) const;
 
 	/**
 	 * @return any descriptive comments about an event, if known to this codebase,
 	 *     or the empty string for external events.
 	 */
-	char const * get_comments(int eid) const;
+	char const * get_comments(int ecode) const;
 
 	/**
 	 * Convert an event ID into standard form (0xXXXXXXXX if component != POSIX,
 	 * or just a decimal number for POSIX).
 	 */
-	static std::string get_std_id_repr(int eid);
+	static std::string get_std_id_repr(int ecode);
 
 	/**
 	 * Convert an event ID into standard form (0xXXXXXXXX if component != POSIX,
@@ -178,18 +178,18 @@ public:
 	 *
 	 * @return bytes copied, or 0 if buffer is too short.
 	 */
-	static size_t get_std_id_repr(int eid, char * buf, size_t buflen);
+	static size_t get_std_id_repr(int ecode, char * buf, size_t buflen);
 	static const size_t MIN_STD_ID_REPR = 11;
 
 	/**
 	 * How many args should be used with this event?
 	 */
-	int get_arg_count(int eid) const;
+	int get_arg_count(int ecode) const;
 
 	/**
 	 * Look up event data like this:
 	 *
-	 *     auto my_symname = events::catalog().get_symbolic_name(eid);
+	 *     auto my_symname = events::catalog().get_symbolic_name(ecode);
 	 */
 	static events const & catalog();
 
@@ -205,7 +205,7 @@ public:
 	/** Allow iteration over internal collection. */
 	typedef std::vector<event_data const *> items_t;
 	items_t const & get_items() const;
-	event_data const * find(int id) const;
+	event_data const * find(int code) const;
 private:
 	items_t items;
 };
