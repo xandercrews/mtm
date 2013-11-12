@@ -31,7 +31,12 @@ sources.extend(Glob('gmock/gtest/src/gtest_main.cc'))
 gtest = SConscript('gmock/gtest/src/sconscript', variant_dir='build/gtest', duplicate=0)
 gmock = SConscript('gmock/src/sconscript', variant_dir='build/gmock', duplicate=0)
 
+libs = [base, domain, jsoncpp, zmq, gmock, gtest, 'pthread']
+import platform
+if platform.uname()[0] != 'Darwin':
+    libs.append('rt')
+
 testrunner = test_env.Program(target='nitro-testrunner', source=sources, 
-    LIBS=[base, domain, jsoncpp, zmq, gmock, gtest, 'pthread', 'rt'])
+    LIBS=libs)
 
 Return('testrunner')

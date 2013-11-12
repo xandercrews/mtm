@@ -4,8 +4,12 @@ Import('domain')
 Import('jsoncpp')
 Import('zmq')
 
-prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=[domain, base,
-	zmq, jsoncpp, 'pthread', 'rt'])
+libs = [domain, base, zmq, jsoncpp, 'pthread']
+import platform
+if platform.uname()[0] != 'Darwin':
+    libs.append('rt')
+
+prog = env.Program(target='nitro', source=Glob('*.cpp'), LIBS=libs)
 
 Return('prog')
 

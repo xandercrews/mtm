@@ -1,0 +1,12 @@
+Import('env')
+Import('base')
+
+libs = [base, 'pthread']
+import platform
+if platform.uname()[0] != 'Darwin':
+    libs.append('rt')
+
+prog = env.Program(target='monte', source=Glob('*.cpp'), LIBS=libs)
+
+Return('prog')
+

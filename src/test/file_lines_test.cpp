@@ -72,7 +72,7 @@ TEST(file_lines_test, text_file) {
 	// Now see if we get the lines we expect (a few blank ones, plus a few
 	// where our "seed" line value shows up in one form or another).
 	file_lines fl(fc.fname.c_str(), true, true);
-	EXPECT_EQ(0, fl.get_current_line_num());
+	EXPECT_EQ(static_cast<size_t>(0), fl.get_current_line_num());
 	int valid_line_count = 0;
 	int blank_line_count = 0;
 	for (int i = 0; i < 20; ++i) {
@@ -92,7 +92,7 @@ TEST(file_lines_test, text_file) {
 	}
 	EXPECT_EQ(5, valid_line_count);
 	EXPECT_EQ(4, blank_line_count);
-	EXPECT_EQ(9, fl.get_current_line_num());
+	EXPECT_EQ(static_cast<size_t>(9), fl.get_current_line_num());
 	EXPECT_STREQ(NULL, fl.next());
 }
 
@@ -141,7 +141,7 @@ TEST(file_lines_test, line_spanning_gulp) {
 
 	file_lines fl(fc.fname.c_str(), false, false, TESTING_GULP_SIZE);
 	auto line = fl.next();
-	EXPECT_EQ(35, strlen(line));
+	EXPECT_EQ(static_cast<size_t>(35), strlen(line));
 	line = fl.next();
 	EXPECT_STREQ("abcdefgjijklmnop ", line);
 	line = fl.next();

@@ -83,7 +83,7 @@ void coord_listener_thread_main(coord_engine const & coord,
 	    }
 	    zmq_close(subscriber);
 	} catch (std::exception const & e) {
-		fprintf(stderr, e.what());
+		fprintf(stderr, "%s\n", e.what());
 	}
 }
 

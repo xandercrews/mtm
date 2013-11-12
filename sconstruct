@@ -85,6 +85,10 @@ Export('env')
 base = SConscript('src/base/sconscript', variant_dir='build/base', duplicate=0)
 Export('base')
 
+monte = SConscript('src/demo/monte/sconscript', variant_dir='build/demo/monte', duplicate=0)
+Export('monte')
+Default(monte)
+
 # Build jsoncpp.
 jsoncpp = SConscript('src/jsoncpp/sconscript', variant_dir='build/jsoncpp', duplicate=0)
 Export('jsoncpp')
