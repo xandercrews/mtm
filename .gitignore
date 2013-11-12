@@ -22,6 +22,9 @@
 config.log
 build
 
+# Mac desktop
+.DS_Store
+
 # Shell files
 .directory
 
