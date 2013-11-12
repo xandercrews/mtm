@@ -5,6 +5,7 @@
 #include <vector>
 
 
+#if 0
 /// trim from start
 std::string & ltrim(std::string &s);
 
@@ -22,5 +23,6 @@ std::vector<std::string> & split(std::string const & s, char delim,
 /// Split a string at an arbitrary delimiter, and push any items that are
 /// found into a vector of strings. Return the newly built vector.
 std::vector<std::string> split(std::string const & s, char delim);
+#endif
 
 #endif // sentry

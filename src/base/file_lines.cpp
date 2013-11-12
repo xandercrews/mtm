@@ -122,7 +122,8 @@ struct file_lines::data_t {
 			// doesn't end with a line-break, that means the final byte of the
 			// file isn't a place we can overwrite. So for small files, the
 			// extra byte is necessary.
-			buf = new char[min(flen + 1, gulp_size)];
+			buf = new char[static_cast<unsigned>(min(flen + 1,
+					static_cast<uint64_t>(gulp_size)))];
 		}
 
 		// How much is left to read in the file?
@@ -131,7 +132,7 @@ struct file_lines::data_t {
 		// Read as much as we can swallow right now, still allowing for a null
 		// terminator.
 		uint64_t intended_bytes_read = min(file_bytes_remaining,
-				gulp_size - 1);
+				static_cast<uint64_t>(gulp_size - 1));
 
 		uint64_t bytes_read = fread(buf, 1, intended_bytes_read, f);
 

@@ -2,7 +2,7 @@
 # to src. Don't define other include paths. This keeps includes exceedingly clean and
 # regular, and it makes includes unambiguous instead of mysterious.
 # Also, force all builds to be done with C++ 11 syntax and libraries.
-env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zeromq/include'], CXXFLAGS='-std=c++0x')
+env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zeromq/include', '/usr/local/include'], CXXFLAGS='-std=c++0x')
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
@@ -22,13 +22,22 @@ if not GetOption('verbose'):
 #
 # This is not a waste of time! As soon as I turned these warnings on I found
 # 2 or 3 bugs.
+linux_only_options = ''
+import platform
+if platform.uname()[0] != 'Darwin':
+	linux_only_options = '''
+-Wclobbered
+-Wmaybe-uninitialized
+-Wno-coverage-mismatch
+-Wunused-but-set-parameter
+'''
+
 warnings = '''
 -Waddress
 -Warray-bounds  
 -Wc++11-compat  
 -Wchar-subscripts
 -Wchar-subscripts  
--Wclobbered  
 -Wcomment
 -Wcomment  
 -Wempty-body  
@@ -37,10 +46,8 @@ warnings = '''
 -Wformat   
 -Wignored-qualifiers 
 -Wmain  
--Wmaybe-uninitialized 
 -Wmissing-braces 
 -Wmissing-field-initializers  
--Wno-coverage-mismatch
 -Wnonnull  
 -Wparentheses  
 -Wreorder   
@@ -56,14 +63,13 @@ warnings = '''
 -Wuninitialized  
 -Wuninitialized  
 -Wunknown-pragmas  
--Wunused-but-set-parameter  
 -Wunused-function  
 -Wunused-label     
 -Wunused-parameter 
 -Wunused-value     
 -Wunused-variable  
--Wvolatile-register-var 
-'''
+-Wvolatile-register-var%s''' % linux_only_options
+
 warnings = ' '.join(w.strip() for w in warnings.strip().split('\n'))
 
 flags = "-D_FILE_OFFSET_BITS=64 " + warnings + ' '

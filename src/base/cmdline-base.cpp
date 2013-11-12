@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 
 #include "base/cmdline-base.h"
@@ -43,7 +44,7 @@ void cmdline_base::add_error(error_event const & err) {
 
 void cmdline_base::parse(int argc, char const ** argv) {
 	program_name = argc > 0 ? argv[0] : get_default_program_name();
-	auto arg = strrchr(program_name, '/');
+	char const * arg = strrchr(program_name, '/');
 	// As long as the program_name doesn't end in a slash, trim
 	// off the path portion.
 	if (arg && arg[1]) {

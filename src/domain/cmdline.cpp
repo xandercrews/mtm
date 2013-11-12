@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "base/interp.h"
 #include "domain/cmdline.h"
