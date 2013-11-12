@@ -1,10 +1,16 @@
 Import('env')
 Import('base')
 Import('domain')
+Import('jsoncpp')
+Import('zmq')
 
 # Create an independent environment to run tests, so we don't
 # propagate any changes back to the master env.
 test_env = env.Clone()
+
+# Be less picky about warnings and errors in this library, since it's not under
+# our control.
+test_env['CCFLAGS'] = test_env['CCFLAGS'].replace(' -Wmissing-field-initializers', '')
 
 # Make sure gtest is in the include path.
 cpppath = test_env['CPPPATH']
@@ -26,6 +32,6 @@ gtest = SConscript('gmock/gtest/src/sconscript', variant_dir='build/gtest', dupl
 gmock = SConscript('gmock/src/sconscript', variant_dir='build/gmock', duplicate=0)
 
 testrunner = test_env.Program(target='nitro-testrunner', source=sources, 
-    LIBS=[base, domain, gmock, gtest, 'pthread'])
+    LIBS=[base, domain, jsoncpp, zmq, gmock, gtest, 'pthread', 'rt'])
 
 Return('testrunner')

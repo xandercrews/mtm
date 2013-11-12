@@ -28,24 +28,16 @@ int main(int argc, char ** argv) {
 
 	try {
 
-		Cmdline cmdline(argc, (char const **)argv);
+		cmdline cmdline(argc, (char const **)argv);
 		if (cmdline.help_needed()) {
 			printf("%s", cmdline.get_help().c_str());
 			return 1;
 		}
 
-		Engine engine;
-
-		char const * port = cmdline.get_option("--port");
-		if (port) {
-			engine.set_port(atoi(port));
-		}
-
-		if (cmdline.has_flag("--slave")) {
-			engine.set_slave_mode(true);
-		}
-
-		return engine.run();
+		// Build whatever type of engine we need for this commandline, and then
+		// run it.
+		engine::handle engine = make_engine(cmdline);
+		return engine->run();
 
 	} catch (std::exception const & e) {
 		printf("Fatal error: %s\n", e.what());

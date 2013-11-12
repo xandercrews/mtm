@@ -1,0 +1,47 @@
+The most important standards to use in this codebase are the so-called "big 5":
+
+1. expressive names
+2. documented preconditions, errors, and vital knowledge
+3. developer tests
+4. adequate error handling
+5. reasonable size for functions, files, and classes
+
+See https://wiki.ac:8443/display/ENG/Coding+Habits for more info about these.
+
+In addition, there are some stylistic rules that we'd like to encourage, in
+order of descending priority.
+
+a. Encapsulate.
+
+   This makes a huge difference to the learnability and long-term maintenance
+   cost of the code. You do it by using interfaces, NEVER having public or
+   protected members, using abstract factories, etc.
+
+b. Prefer C++ 11 headers and mechanisms.
+
+   This means you should use std::thread instead of pthreads, std::mutex instead
+   of pthread_mutex_t, std::atomic, std::chrono, std::regex, etc. The main
+   benefit of this is that this keeps us insulated from *nix-specific C-isms. A
+   secondary benefit is that it raises the general level of sophistication of
+   our team with respect to C++. (There are a few exceptions; std streams and
+   locales have never been widely accepted, so a good old FILE * is fine...)
+   
+c. Don't relax warnings, and don't check in code that compiles with warnings.
+   
+d. Use std::unique_ptr and scope_guard to implement RAII. 
+
+e. Use #includes that are relative to the ./src folder. This makes it very
+   clear where a particular file comes from, and how internal packages depend
+   on one another.
+   
+f. Prefer static linking.
+   
+g. Avoid pre/suffixes that just clutter the code without a meaningful increase
+   in the semantic payload of a name. (The *_t suffix is an exception; we use
+   it for classes and enums that just hold data, so that we can have variables
+   that use the same name without the suffix.) 
+   
+h. Maintain conventions on capitalization, indenting, and naming that are
+   already active in the codebase. These conventions reflect the way the STL
+   is named, formatted, and written.
+   

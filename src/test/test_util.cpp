@@ -8,3 +8,13 @@ void expect_str_contains(char const * haystack, char const * needle,
 				<< " \"" << haystack << "\".";
 	}
 }
+
+void expect_str_contains(char const * haystack, std::string const & needle,
+		bool expected) {
+	expect_str_contains(haystack, needle.c_str(), expected);
+}
+
+void expect_str_contains(std::string const & haystack, char const * needle,
+		bool expected) {
+	expect_str_contains(haystack.c_str(), needle, expected);
+}

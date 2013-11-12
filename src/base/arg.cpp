@@ -1,62 +1,62 @@
 #include "base/arg.h"
 
-Arg::Arg() : arg_type(atEmpty), int_value(0) {
+arg::arg() : arg_type(atEmpty), int_value(0) {
 }
 
-Arg const & make_empty() {
-	static Arg theEmptyArg;
+arg const & make_empty() {
+	static arg theEmptyArg;
 	return theEmptyArg;
 }
 
-Arg const & Arg::Empty = make_empty();
+arg const & arg::Empty = make_empty();
 
-Arg::Arg(int64_t value) : arg_type(atInt), int_value(value) {
+arg::arg(int64_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(int32_t value) : arg_type(atInt), int_value(value) {
+arg::arg(int32_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(int16_t value) : arg_type(atInt), int_value(value) {
+arg::arg(int16_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(int8_t value) : arg_type(atInt), int_value(value) {
+arg::arg(int8_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(uint64_t value) : arg_type(atUInt), uint_value(value) {
+arg::arg(uint64_t value) : arg_type(atUInt), uint_value(value) {
 }
 
-Arg::Arg(uint32_t value) : arg_type(atInt), int_value(value) {
+arg::arg(uint32_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(uint16_t value) : arg_type(atInt), int_value(value) {
+arg::arg(uint16_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(uint8_t value) : arg_type(atInt), int_value(value) {
+arg::arg(uint8_t value) : arg_type(atInt), int_value(value) {
 }
 
-Arg::Arg(double value) : arg_type(atDouble), double_value(value) {
+arg::arg(double value) : arg_type(atDouble), double_value(value) {
 }
 
-Arg::Arg(char const * value) : arg_type(atCharPtr), ptr_value(value) {
+arg::arg(char const * value) : arg_type(atCharPtr), ptr_value(value) {
 }
 
-Arg::Arg(std::string const & value) : arg_type(atString), str_value(&value) {
+arg::arg(std::string const & value) : arg_type(atString), str_value(&value) {
 }
 
-Arg::Arg(ArgCompatible const * value) : arg_type(atCompatible),
+arg::arg(arg_compatible const * value) : arg_type(atCompatible),
 		compatible_value(value) {
 }
 
-Arg::Arg(ArgCompatible const & value) : arg_type(atCompatible),
+arg::arg(arg_compatible const & value) : arg_type(atCompatible),
 		compatible_value(&value) {
 }
 
-std::string Arg::to_string(char const * format) const {
+std::string arg::to_string(char const * format) const {
 	std::string txt;
-	return append_to(txt);
+	return append_to(txt, format);
 }
 
-std::string & Arg::append_to(std::string & txt, char const * format) const {
+std::string & arg::append_to(std::string & txt, char const * format) const {
 	switch (arg_type) {
 	case atUInt:
 		{

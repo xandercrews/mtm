@@ -1,7 +1,10 @@
 #ifndef _BASE_DBC_H_
 #define _BASE_DBC_H_
 
-#include "common/error.h"
+#include <boost/scope_exit.hpp>
+
+#include "base/error.h"
+#include "base/event_ids.h"
 
 /**
  * Provide support for "design by contract", which allows functions to declare
@@ -25,7 +28,7 @@
  */
 #ifndef CONTRACT_VIOLATION_ACTION
 #define CONTRACT_VIOLATION_ACTION(code, expr_text) \
-	throw NITRO_ERROR(code, expr_text)
+	throw ERROR_EVENT(code, expr_text)
 #endif
 
 /**
@@ -33,28 +36,38 @@
  * function, such as requiring that a pointer not be NULL. Declare them at the
  * top of the code block of the called function.
  */
-#define PRECONDITION(expr) if (!expr) \
-	CONTRACT_VIOLATION_ACTION(NITRO_PRECONDITION_1EXPR_VIOLATED, #expr)
+#define PRECONDITION(expr) if (!(expr)) \
+	CONTRACT_VIOLATION_ACTION(\
+			base::event_ids::E_PRECONDITION_1EXPR_VIOLATED, #expr)
 
 /**
  * A check is a way for paranoid callers to verify the behavior of called
  * functions. Declare them right after a function call that you don't trust.
  */
-#define CHECK(expr) if (!expr) \
-	CONTRACT_VIOLATION_ACTION(NITRO_CHECK_1EXPR_VIOLATED, #expr)
+#define CHECK(expr) if (!(expr)) \
+	CONTRACT_VIOLATION_ACTION(\
+			base::event_ids::E_CHECK_1EXPR_VIOLATED, #expr)
 
 /**
  * A postcondition is a guarantee that a function makes on exit. When
  * postconditions fail, it is a bug in the function, not a bug in the caller
- * or a problem in any of the callees. Ideally, we'd declare postconditions in
+ * or a problem in any of the callees. Naively, we'd declare postconditions in
  * the ...finally portion of a try...finally block that encloses a full
- * function body, or an interesting subset of it. But C++ doesn't support
- * that. So only use this macro if you're not worried about early exits
- * from a function short-circuiting your enforcement. See
- * http://codecraft.co/2013/10/31/why-we-need-try-finally-not-just-raii/.
+ * function body, or an interesting subset thereof. But C++ doesn't support
+ * try...finally. In C++03, that didn't leave us very happy... but in C++ 11,
+ * we have lambdas. And magic ensues... The following code allows you to
+ * declare a postcondition as soon as all the variables you need to test are
+ * in scope, and still have those variables evaluated *whenever the function
+ * goes out of scope*. See unit tests for typical usage, or see the boost
+ * documentation at http://www.boost.org/doc/libs/1_54_0/libs/scope_exit/doc/html.
+ *
  */
-#define POSTCONDITION(expr) if (!expr) \
-	CONTRACT_VIOLATION_ACTION(NITRO_POSTCONDITION_1EXPR_VIOLATED, #expr)
-
+#define POSTCONDITION(expr) \
+	BOOST_SCOPE_EXIT_ALL(&) { \
+		if (!(expr)) { \
+			CONTRACT_VIOLATION_ACTION( \
+					base::event_ids::E_POSTCONDITION_1EXPR_VIOLATED, #expr); \
+		} \
+	}
 
 #endif // sentry

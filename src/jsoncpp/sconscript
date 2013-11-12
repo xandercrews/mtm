@@ -1,0 +1,15 @@
+Import('env')
+
+# Make our own env that's like the main one, only slightly more permissive
+# about some warnings. We do this so we can keep our source identical to version
+# 0.5, which is the latest stable version on sourceforge.
+json_env = env.Clone()
+
+# Be less picky about warnings and errors in this library, since it's not under
+# our control.
+json_env['CCFLAGS'] = json_env['CCFLAGS'].replace(' -Wunused-parameter', '')
+
+jsoncpp = json_env.Library(target='jsoncpp', source=Glob('src/lib_json/*.cpp'))
+
+Return('jsoncpp')
+

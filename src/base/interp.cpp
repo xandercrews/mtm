@@ -62,8 +62,8 @@ static char const * get_fmt_spec(char const * first_char_after,
 				if (fmtspec) {
 
 					// Can we fit it in the buffer we've been given?
-					auto fmtspec_len = end_of_fmtspec - fmtspec;
-					if (fmtspec_len < sizeof(fmtspec_buf) - 1) {
+					size_t fmtspec_len = end_of_fmtspec - fmtspec;
+					if (fmtspec_len < sizeof(fmtspec_buf) - 1u) {
 						strncpy(fmtspec_buf, fmtspec, fmtspec_len);
 						fmtspec_buf[fmtspec_len] = 0;
 						fmtspec = fmtspec_buf;
@@ -80,7 +80,7 @@ static char const * get_fmt_spec(char const * first_char_after,
  * Fill a string with a template plus interpolated args.
  */
 std::string & interp_into(std::string & txt, char const * format,
-		Arg const * args[], size_t max_argref) {
+		arg const * args[], size_t max_argref) {
 	char const * end = strchr(format, 0);
 
 	// Reserve memory all at once, rather than piecemeal. This makes all the
@@ -88,7 +88,7 @@ std::string & interp_into(std::string & txt, char const * format,
 	// converts into an inlined set of a char in a buffer.
 	txt.reserve((end - format) * 2);
 
-	auto max_idx_char = '0' + max_argref;
+	auto max_idx_char = static_cast<char>('0' + max_argref);
 	for (char const * p = format; p < end; ++p) {
 		char c = *p;
 		// Look for potential arg refs.
@@ -103,7 +103,7 @@ std::string & interp_into(std::string & txt, char const * format,
 			// Valid arg ref, in correct range. Expand it.
 			} else if (c2 >= '1' && c2 <= max_idx_char) {
 
-				Arg const * arg = args[c2 - '1'];
+				arg const * arg = args[c2 - '1'];
 				// Reserve a place to copy the format specifier, if one exists.
 				char fmtspec_buf[FMTSPEC_BUF_LEN];
 				// Go look for it. This call also adjusts p as needed.
@@ -123,8 +123,7 @@ std::string & interp_into(std::string & txt, char const * format,
 std::string interp(char const * format, MANY_ARGS_IMPL) {
 	if (!format) return "";
 	std::string txt;
-	Arg const * args[] = {&arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7,
-			&arg8, &arg9};
+	arg const * args[] = {MANY_ARGS_PTR_LIST};
 	interp_into(txt, format, args, 9);
 	return txt; // optimized w/ move semantics in C++ 11
 }
@@ -132,7 +131,7 @@ std::string interp(char const * format, MANY_ARGS_IMPL) {
 std::string interp(char const * format, THREE_ARGS) {
 	if (!format) return "";
 	std::string txt;
-	Arg const * args[] = {&arg1, &arg2, &arg3};
+	arg const * args[] = {&a1, &a2, &a3};
 	interp_into(txt, format, args, 3);
 	return txt; // optimized w/ move semantics in C++ 11
 }
@@ -140,7 +139,7 @@ std::string interp(char const * format, THREE_ARGS) {
 std::string interp(char const * format, TWO_ARGS) {
 	if (!format) return "";
 	std::string txt;
-	Arg const * args[] = {&arg1, &arg2};
+	arg const * args[] = {&a1, &a2};
 	interp_into(txt, format, args, 2);
 	return txt; // optimized w/ move semantics in C++ 11
 }
@@ -148,7 +147,7 @@ std::string interp(char const * format, TWO_ARGS) {
 std::string interp(char const * format, ONE_ARG) {
 	if (!format) return "";
 	std::string txt;
-	Arg const * args[] = {&arg1};
+	arg const * args[] = {&a1};
 	interp_into(txt, format, args, 1);
 	return txt; // optimized w/ move semantics in C++ 11
 }

@@ -2,7 +2,7 @@
 # to src. Don't define other include paths. This keeps includes exceedingly clean and
 # regular, and it makes includes unambiguous instead of mysterious.
 # Also, force all builds to be done with C++ 11 syntax and libraries.
-env = Environment(CPPPATH='#/src', CXXFLAGS='-std=c++0x')
+env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zeromq/include'], CXXFLAGS='-std=c++0x')
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
@@ -13,30 +13,105 @@ if not GetOption('verbose'):
     env['CXXCOMSTR'] = "Compiling $SOURCE ..."
     env['LINKCOMSTR'] = "Linking $TARGET ..."
 
+# In order to keep this codebase as clean as possible, we want to be very picky
+# about warnings. We don't turn on *all* of them, but we turn on most. (An
+# example of one we don't care about is -Wdouble-promotion, that warns about
+# using a double when a float might suffice. That only matters with 32-bit
+# CPUs.) This list is close to the combination of -Wall and -Wextra, but not
+# identical.
+#
+# This is not a waste of time! As soon as I turned these warnings on I found
+# 2 or 3 bugs.
+warnings = '''
+-Waddress
+-Warray-bounds  
+-Wc++11-compat  
+-Wchar-subscripts
+-Wchar-subscripts  
+-Wclobbered  
+-Wcomment
+-Wcomment  
+-Wempty-body  
+-Wenum-compare 
+-Wformat
+-Wformat   
+-Wignored-qualifiers 
+-Wmain  
+-Wmaybe-uninitialized 
+-Wmissing-braces 
+-Wmissing-field-initializers  
+-Wno-coverage-mismatch
+-Wnonnull  
+-Wparentheses  
+-Wreorder   
+-Wreturn-type  
+-Wsequence-point  
+-Wsign-compare  
+-Wsign-compare  
+-Wstrict-aliasing  
+-Wstrict-overflow=1  
+-Wswitch  
+-Wtrigraphs  
+-Wtype-limits  
+-Wuninitialized  
+-Wuninitialized  
+-Wunknown-pragmas  
+-Wunused-but-set-parameter  
+-Wunused-function  
+-Wunused-label     
+-Wunused-parameter 
+-Wunused-value     
+-Wunused-variable  
+-Wvolatile-register-var 
+'''
+warnings = ' '.join(w.strip() for w in warnings.strip().split('\n'))
+
+flags = "-D_FILE_OFFSET_BITS=64 " + warnings + ' '
 if GetOption('release'):
-	env['CCFLAGS'] = '-O3 -D_FILE_OFFSET_BITS=64'
+	env['CCFLAGS'] = flags + '-O3'
 else:
-	env['CCFLAGS'] = '-g -D_FILE_OFFSET_BITS=64'
+	env['CCFLAGS'] = flags + '-g'
 
 # Make sure all other scripts can use the Environments we've built.
 Export('env')
 
-# Build the base library for nitro, both release and debug.
+# Build the base library for nitro.
 base = SConscript('src/base/sconscript', variant_dir='build/base', duplicate=0)
 Export('base')
 
-# Build the domain library for nitro, both release and debug.
+# Build jsoncpp.
+jsoncpp = SConscript('src/jsoncpp/sconscript', variant_dir='build/jsoncpp', duplicate=0)
+Export('jsoncpp')
+
+# Build zeromq.
+zmq = SConscript('src/zeromq/sconscript', variant_dir='build/zeromq', duplicate=0)
+Export('zmq')
+
+# Build the domain library for nitro.
 domain = SConscript('src/domain/sconscript', variant_dir='build/domain', duplicate=0)
 Export('domain')
 
-# Build the main binary, both release and debug.
+# Build the main binary.
 binary = SConscript('src/nitro/sconscript', variant_dir='build/nitro', duplicate=0)
 Default(binary)
 
-# Build tests, both release and debug.
+# Build tests.
 testrunner = SConscript('src/test/sconscript', variant_dir='build/test', duplicate=0)
-
 Default(testrunner)
+
+# --------------------- pseudo targets ------------------
+
+def PhonyTargets(env = None, **kwargs):
+       if not env: 
+               env = DefaultEnvironment()
+       for target, actioninfo in kwargs.items():
+               deps, action = actioninfo
+               env.AlwaysBuild(env.Alias(target, deps, action))
+
+PhonyTargets(env, test = ([testrunner],'build/test/nitro-testrunner',))
+
+if 'debian' in COMMAND_LINE_TARGETS:
+	SConscript('deb/sconscript')
 
 # -------------------- gory and mostly uninteresting details --------------------
 

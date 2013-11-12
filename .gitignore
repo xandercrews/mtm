@@ -24,3 +24,11 @@ build
 
 # Mac desktop
 .DS_Store
+
+# Shell files
+.directory
+
+# Intellij/IDEA/PyCharm artifacts
+.idea/
+*.iml
+*.iws
