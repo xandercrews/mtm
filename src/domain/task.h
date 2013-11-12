@@ -15,8 +15,10 @@ public:
 	task(char const * cmdline, assignment * asgn, uint64_t id);
 	virtual ~task() {}
 
-	virtual assignment * get_assignment() const;
-	virtual uint64_t get_id() const;
+	assignment * get_assignment() const;
+	uint64_t get_id() const;
+	char const * get_cmdline() const;
+
 	virtual int get_priority() const = 0;
 	virtual int get_walltime() const = 0;
 	virtual void get_validation_errors(std::string &) const = 0;

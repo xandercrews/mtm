@@ -18,6 +18,10 @@ uint64_t task::get_id() const {
 	return id;
 }
 
+char const * task::get_cmdline() const {
+	return cmdline;
+}
+
 task::handle task::make(char const * cmdline, assignment * asgn, uint64_t id) {
 	if (cmdline) {
 		while (isspace(*cmdline)) {
