@@ -50,6 +50,10 @@ private:
 	void * _job_annonce_pgm;
 	void * _job_annonce_ipc;
 	stringlist_t _workers;
+
+  void progress_reporter();
+  bool report_progress;
+  int reporter_port;
 };
 
 } // end namespace nitro

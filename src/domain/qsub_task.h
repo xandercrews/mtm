@@ -2,7 +2,7 @@
 #define _DOMAIN_QSUB_TASK_H_
 
 #ifndef _PROPERLY_INCLUDED
-#error This header shouldn't be directly included. Use abstract factory method instead.
+#error This header should not be directly included. Use abstract factory method instead.
 #endif
 
 #include "domain/task.h"
