@@ -30,7 +30,7 @@ char const * cmdline::get_valid_flags() const {
  * For the time being, this is as far as I got.
  */
 char const * cmdline::get_valid_options() const {
-	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e|--ethernet|-i|";
+	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e|--ethernet|-i|--reportport|-p|";
 }
 
 char const * cmdline::get_default_program_name() const {
@@ -93,8 +93,9 @@ std::string cmdline::get_help() const {
 		"      --replyport or -r    -- Listen on this port (%3{defpport} is default).\n"
 		"      --publishport or -p  -- Talk on this port (%4{defaport} is default).\n"
     "      --ethernet           -- Ethernet interface for mutlicast messages (%5{ethernet} is default).\n"
+    "      --reportport         -- Report porgress on this port (%6{ethernet} is default).\n"
 		"\n",
-		e, get_program_name(), DEFAULT_PASSIVE_PORT, DEFAULT_ACTIVE_PORT, DEFAULT_ETHERNET_INTERFACE
+		e, get_program_name(), DEFAULT_PASSIVE_PORT, DEFAULT_ACTIVE_PORT, DEFAULT_ETHERNET_INTERFACE, DEFAULT_REPORTER_PORT
 		);
 }
 

@@ -75,6 +75,8 @@ coord_engine::coord_engine(cmdline const & cmdline) :
     rc = zmq_bind(_job_annonce_ipc, DEFAULT_IPC_ENDPOINT);
     xlog("ipc pub socket bind result: %1", rc);
   }
+
+  reporter_port = cmdline.get_option_as_int("--reporter", DEFAULT_REPORTER_PORT);
 }
 
 coord_engine::~coord_engine() {
@@ -254,13 +256,47 @@ void coord_engine::distribute(assignment_t & asgn) {
     }
 }
 
+void coord_engine::progress_reporter()
+{
+  int rc = -1;
+
+  // Socket for worker control
+  void *reporter = zmq_socket (ctx, ZMQ_PUB);
+  if (reporter){
+    string endpoint = string("tcp://*:") + to_string(reporter_port);
+    rc = zmq_bind(reporter, endpoint.c_str());
+    xlog("reporter bind to socket %1 result %2", reporter_port, rc);
+  }
+
+  xlog("Start sending reports each second");
+
+  while (report_progress
+         && !rc) {
+    string progress = "Progress(50%): So far done 500 jobs from 1000";
+    auto msg = serialize_msg(NITRO_BATCH_PROGRESS_REPORT, progress);
+    send_full_msg(reporter, msg);    
+    sleep(1);
+  }
+
+  if (reporter) {
+    zmq_close(reporter);    
+  }
+
+  xlog("Before report thread exit");
+}
+
+
 int coord_engine::do_run() {
+  
+  report_progress = true;
+  std::thread t1(&coord_engine::progress_reporter, this);
+
 	// This is totally the wrong way to do dispatch of assignments. I'm
 	// completely abusing zmq by short-circuiting its own fair share routing
 	// and by creating and destroying sockets right and left. I've only done
 	// it this way to get some logic running that I can improve incrementally.
 
-    enroll_workers_multi(NITRO_REQUEST_HELP);
+  enroll_workers_multi(NITRO_REQUEST_HELP);
 	enroll_workers(NITRO_REQUEST_HELP);
 
 	while (true) {
@@ -279,6 +315,9 @@ int coord_engine::do_run() {
 	zmq_setsockopt(requester, ZMQ_LINGER, &linger, sizeof(linger));
 	zmq_close(requester);
 	xlog("Completed all batches.");
+
+  report_progress = false;
+  t1.join();
 
 	return 0;
 }
