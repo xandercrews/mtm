@@ -1,10 +1,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base/error.h"
+
+#include "domain/event_codes.h"
 #define _PROPERLY_INCLUDED
 #include "domain/qsub_task.h"
 
+using namespace nitro::event_codes;
+
 namespace nitro {
+
+qsub_task::qsub_task(char const * cmdline, char const * end_of_cmdline,
+		assignment * asgn, uint64_t id) :
+	task(cmdline, end_of_cmdline, asgn, id) {
+}
 
 int qsub_task::get_priority() const {
 	char const * p = strstr(get_cmdline(), " -p");
@@ -18,8 +28,51 @@ int qsub_task::get_priority() const {
 	return 0;
 }
 
-int qsub_task::get_walltime() const {
-	return 1; // todo: look up from a flag?
+double walltime_to_seconds(char const * walltime) {
+	double value = 0.0;
+	char const * end = strchr(walltime, ' ');
+	if (!end) {
+		end = strchr(walltime, 0);
+	}
+	char buf[128];
+	if (static_cast<size_t>(end - walltime) < sizeof(buf) - 1) {
+		strncpy(buf, walltime, end - walltime);
+		buf[end - walltime] = 0;
+	}
+	int multiplier = 1;
+	while (true) {
+		auto p = strchr(buf, 0);
+		while (p > buf && *p != ':') {
+			--p;
+		}
+		if (*p == ':') {
+			++p;
+		}
+		char * end_of_segment;
+		auto val = strtol(p, &end_of_segment, 10);
+		if (*end_of_segment != 0) {
+			throw ERROR_EVENT(NITRO_BAD_WALLTIME_1VALUE,
+					std::string(walltime, end));
+		}
+		val *= multiplier;
+		value += val;
+		if (multiplier < 3600) {
+			multiplier *= 60;
+		} else {
+			multiplier = 86400;
+		}
+		if (p > buf) {
+			p[-1] = 0;
+		} else {
+			break;
+		}
+	}
+	return value;
+}
+
+double qsub_task::get_walltime_seconds() const {
+	// TODO: Look for -l walltime=value
+	return 1;
 }
 
 void qsub_task::get_validation_errors(std::string & errors) const {

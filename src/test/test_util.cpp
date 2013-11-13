@@ -1,5 +1,7 @@
 #include "test/test_util.h"
 
+using std::string;
+
 void expect_str_contains(char const * haystack, char const * needle,
 		bool expected) {
 	if ((strstr(haystack, needle) != 0) != expected) {
@@ -9,17 +11,22 @@ void expect_str_contains(char const * haystack, char const * needle,
 	}
 }
 
-void expect_str_contains(char const * haystack, std::string const & needle,
+void expect_str_contains(char const * haystack, string const & needle,
 		bool expected) {
 	expect_str_contains(haystack, needle.c_str(), expected);
 }
 
-void expect_str_contains(std::string const & haystack, char const * needle,
+void expect_str_contains(string const & haystack, char const * needle,
 		bool expected) {
 	expect_str_contains(haystack.c_str(), needle, expected);
 }
 
-std::string make_temp_file() {
+void expect_str_contains(string const & haystack, string const & needle,
+		bool expected) {
+	expect_str_contains(haystack.c_str(), needle, expected);
+}
+
+string make_temp_file() {
 	char buf[512];
 	strcpy(buf, "/tmp/test_XXXXXX");
 	int handle = mkstemp(buf);

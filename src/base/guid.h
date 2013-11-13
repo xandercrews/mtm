@@ -1,7 +1,8 @@
 #ifndef _BASE_GUID_H_
 #define _BASE_GUID_H_
 
-#include <stddef.h>
+#include <stddef.h> // for size_t
+#include <string>
 
 /**
  * Generating guids is not rocket science. On most linux distros, you can just
@@ -23,6 +24,11 @@ const size_t GUID_BUF_LEN = 37;
  *     violated, an error(E_PRECONDITION_1EXPR_VIOLATED) is thrown.
  */
 void generate_guid(char * buf, size_t buflen);
+
+/**
+ * Generate a guid and return it as a std::string.
+ */
+std::string generate_guid();
 
 /**
  * Compare guids, and return 0 if ==, -1 if a < b, or 1 if a > b.

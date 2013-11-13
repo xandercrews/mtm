@@ -12,6 +12,8 @@
 #include "domain/event_codes.h"
 #include "domain/msg.h"
 
+#include "json/json.h"
+
 #include "zeromq/include/zmq.h"
 
 using namespace std;
@@ -22,36 +24,36 @@ namespace nitro {
 worker_engine::worker_engine(cmdline const & cmdline) :
 		engine(cmdline) {
 
-    _job_annonce_sub = zmq_socket(ctx,ZMQ_SUB);
-    if (_job_annonce_sub) {
+    _job_announce_sub = zmq_socket(ctx,ZMQ_SUB);
+    if (_job_announce_sub) {
       string eth = cmdline.get_option("--ethernet") ? cmdline.get_option("--ethernet") : DEFAULT_ETHERNET_INTERFACE;    
       string endpoint = "epgm://" + eth + ";239.192.1.1:5555";
       
-      zmq_setsockopt(_job_annonce_sub, ZMQ_SUBSCRIBE, _subscription.c_str(), _subscription.size());
+      zmq_setsockopt(_job_announce_sub, ZMQ_SUBSCRIBE, _subscription.c_str(), _subscription.size());
 
-      int rc = zmq_connect(_job_annonce_sub, endpoint.c_str());
+      int rc = zmq_connect(_job_announce_sub, endpoint.c_str());
       xlog("connect to pgm: %1", rc);
-      rc = zmq_connect(_job_annonce_sub, DEFAULT_IPC_ENDPOINT);
+      rc = zmq_connect(_job_announce_sub, DEFAULT_IPC_ENDPOINT);
       xlog("connect to ipc: %1", rc);
     }
 }
 
 worker_engine::~worker_engine() {
   int linger = 0;
-  if (_job_annonce_sub) {
-    zmq_setsockopt(_job_annonce_sub, ZMQ_LINGER, &linger, sizeof(linger));
-    zmq_close(_job_annonce_sub);
+  if (_job_announce_sub) {
+    zmq_setsockopt(_job_announce_sub, ZMQ_LINGER, &linger, sizeof(linger));
+    zmq_close(_job_announce_sub);
   }
 }
 
 int worker_engine::do_run() {
 
-  if (_job_annonce_sub) {
+  if (_job_announce_sub) {
     Json::Value root;
 
     // Waits for request from the server
     xlog("waiting for coordinator...");
-    string json = receive_full_msg(_job_annonce_sub);
+    string json = receive_full_msg(_job_announce_sub);
 
     if (json.size()
         && deserialize_msg(json, root) )

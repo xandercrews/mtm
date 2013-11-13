@@ -25,4 +25,9 @@ std::vector<std::string> & split(std::string const & s, char delim,
 std::vector<std::string> split(std::string const & s, char delim);
 #endif
 
+/// Parse the hostnames from exec_hosts and place them into exec_host_vector
+/// exec_host is in the following format:
+/// hostname/index[+hostname2/index2[...]]
+void parse_exec_hosts(std::string const &exec_hosts, std::vector<std::string> &exec_host_vector);
+
 #endif // sentry

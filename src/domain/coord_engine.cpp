@@ -13,6 +13,8 @@
 #include "domain/event_codes.h"
 #include "domain/msg.h"
 
+#include "json/json.h"
+
 #include "zeromq/include/zmq.h"
 
 using namespace std;
@@ -218,7 +220,6 @@ coord_engine::assignment_t coord_engine::next_assignment() {
 }
 
 void coord_engine::prioritize(assignment_t & asgn) {
-	// This is just a demo of doing a sort.
 	struct priority_func {
 		int operator ()(std::string const & a, std::string const & b) {
 			// Here we could parse strings a and b and see if userprio was set,

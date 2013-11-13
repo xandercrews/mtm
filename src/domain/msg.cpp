@@ -3,6 +3,8 @@
 
 #include "domain/msg.h"
 
+#include "json/json.h"
+
 #include "zeromq/include/zmq.h"
 
 namespace nitro {

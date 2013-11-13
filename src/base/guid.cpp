@@ -11,6 +11,8 @@
  * numbers. Normalize to something we can count on.
  */
 inline uint16_t rand16(unsigned int * state) {
+	// TODO: convert to use std::mt19937 instead. It's faster, cleaner, and
+	// more random than rand_r.
 	return static_cast<uint16_t>(rand_r(state));
 }
 
@@ -28,6 +30,12 @@ void generate_guid(char * buf, size_t buflen) {
 		    ((rand16(&state) & 0x0fff) | 0x4000), // Generates a 16-bit Hex number of the form 4xxx (4 indicates the UUID version)
 		    rand16(&state) % 0x3fff + 0x8000,     // Generates a 16-bit Hex number in the range [0x8000, 0xbfff]
 		    rand16(&state), rand16(&state), rand16(&state));
+}
+
+std::string generate_guid() {
+	char buf[GUID_BUF_LEN];
+	generate_guid(buf, sizeof(buf));
+	return buf;
 }
 
 inline bool is_valid_guid_noise(char c) {

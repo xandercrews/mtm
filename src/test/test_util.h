@@ -15,6 +15,9 @@ void expect_str_contains(std::string const & haystack, char const * needle,
 void expect_str_contains(char const * haystack, std::string const & needle,
 		bool expected = true);
 
+void expect_str_contains(std::string const & haystack,
+		std::string const & needle, bool expected = true);
+
 struct FileCleanup {
 	std::string fname;
 	FileCleanup(char const * fname) : fname(fname) {}

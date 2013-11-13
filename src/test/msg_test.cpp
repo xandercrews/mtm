@@ -5,6 +5,7 @@ using namespace nitro;
 
 #include "gtest/gtest.h"
 
+#include "json/json.h"
 
 #include "test/test_util.h"
 

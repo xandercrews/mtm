@@ -21,6 +21,8 @@ std::string & trim(std::string &s) {
 	return ltrim(rtrim(s));
 }
 
+#endif
+
 std::vector<std::string> & split(std::string const & s, char delim,
 		std::vector<std::string> &elems) {
     std::stringstream ss(s);
@@ -36,4 +38,19 @@ std::vector<std::string> split(std::string const & s, char delim) {
     split(s, delim, elems);
     return elems;
 }
-#endif
+
+void parse_exec_hosts(std::string const &exec_hosts, std::vector<std::string> &exec_host_vector) {
+  
+  std::vector<std::string> tmp_list;
+  split(exec_hosts, '+', tmp_list);
+
+  for (int i = 0; i < tmp_list.size(); i++) {
+    std::string tmp_host = tmp_list[i];
+    size_t      pos = tmp_host.find("/");
+
+    if (pos != std::string::npos)
+      tmp_host.erase(pos);
+
+    exec_host_vector.push_back(tmp_host);
+  }
+}

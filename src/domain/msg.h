@@ -3,7 +3,9 @@
 
 #include <string>
 
-#include "json/json.h"
+namespace Json {
+	class Value;
+}
 
 namespace nitro {
 

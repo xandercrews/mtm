@@ -24,6 +24,12 @@ EVENT(NITRO_EXPECTED_UNIQUE_1SWITCH_BUT_2NUM_REUSED, error, user, 2,
 		" re-used.",
 		"")
 
+EVENT(NITRO_BAD_WALLTIME_1VALUE, error, user, 3,
+		"domain.nitro.input",
+		"Invalid walltime value \"%1\". Expected raw seconds, m:s, h:m:s, or"
+		" d:h:m:s.",
+		"")
+
 EVENT(NITRO_HERE_IS_ASSIGNMENT, info, internal, 100,
 		"domain.nitro.coordinate",
 		"Here is an assignment of a few new commands to run.",
