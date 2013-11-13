@@ -12,58 +12,47 @@
 #include "domain/engine.h"
 #include "domain/event_codes.h"
 #include "domain/worker_engine.h"
+#include "domain/zmq_helpers.h"
 
 #include "zeromq/include/zmq.hpp"
 
 namespace nitro {
 
-const std::string engine::_subscription = "nitro";
+const char * const COORDINATION_TOPIC = events::catalog().get_topic(
+		nitro::event_codes::NITRO_REQUEST_HELP);
+
+// hardware_concurrency() can return 0 if unable to determine; assume at least 4
+const unsigned MAX_HARDWARE_THREADS = std::max(4u, std::thread::hardware_concurrency());
 
 engine::engine(cmdline const & cmdline) :
 		ctx(_ctx), responder(_responder), publisher(_publisher),
 		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
-		id(), inproc_endpoint(), tcp_endpoint() {
-	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_PASSIVE_PORT);
-	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_ACTIVE_PORT);
+		id(), ipc_pub_endpoint(), tcp_pub_endpoint() {
+
+	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_REPLY_PORT);
+	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_PUBLISH_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
 	PRECONDITION(publish_port > 1024 && publish_port < 65536);
 	PRECONDITION(reply_port != publish_port);
-	{
-		char buf[GUID_BUF_LEN];
-		generate_guid(buf, sizeof(buf));
-		id = buf;
-	}
+
+	id = generate_guid();
     _ctx = zmq_ctx_new();
     _publisher = zmq_socket(_ctx, ZMQ_PUB);
-    // TODO: improve with scopeguard
-	inproc_endpoint = interp("inproc://%1", id);
-    int rc = zmq_bind(_publisher, inproc_endpoint.c_str());
-    if (rc == 0) {
-    	tcp_endpoint = interp("tcp://127.0.0.1:%1", publish_port);
-//    	rc = zmq_bind(_publisher, tcp_endpoint.c_str());
-    }
-    if (rc != 0) {
-    	zmq_close(_publisher);
-    	_publisher = 0;
-    	zmq_ctx_destroy(_ctx);
-    	_ctx = 0;
-    	throw ERROR_EVENT(errno);
-    }
+    tcp_pub_endpoint = interp("tcp://*:%1", publish_port);
+    zmq_bind_and_log(_publisher, tcp_pub_endpoint.c_str());
 }
 
 engine::~engine() {
-	int linger = 0;
-	if (_publisher) {
-		zmq_setsockopt(_publisher, ZMQ_LINGER, &linger, sizeof(linger));
-		zmq_close(_publisher);
-	}
-	if (_responder) {
-		zmq_setsockopt(_responder, ZMQ_LINGER, &linger, sizeof(linger));
-		zmq_close(_responder);
-	}
+	zmq_close_now(_publisher);
+	zmq_close_now(_responder);
 	if (ctx) {
 		zmq_ctx_destroy(ctx);
 	}
+}
+
+void engine::bind_publisher_to_ipc(char const * style) {
+	ipc_pub_endpoint = interp(IPC_PUB_BINDING, getpid(), style);
+	zmq_bind_and_log(_publisher, ipc_pub_endpoint.c_str());
 }
 
 char const * engine::get_id() const {
@@ -73,12 +62,12 @@ char const * engine::get_id() const {
 char const * engine::get_subscribe_endpoint(char const * transport) const {
 	PRECONDITION(transport);
 	if (strcmp(transport, "tcp") == 0) {
-		return tcp_endpoint.c_str();
+		return tcp_pub_endpoint.c_str();
 	}
-	if (strcmp(transport, "inproc") == 0) {
-		return inproc_endpoint.c_str();
+	if (strcmp(transport, "ipc") == 0) {
+		return ipc_pub_endpoint.c_str();
 	}
-	PRECONDITION("transport must be \"tcp\" or \"inproc\"." && false);
+	PRECONDITION("transport must be \"tcp\" or \"ipc\"." && false);
 }
 
 int engine::get_reply_port() const {
@@ -129,25 +118,5 @@ int engine::run() {
 	xlog("Returning exit code %1", exit_code);
 	return exit_code;
 }
-
-#if 0
-int engine::run() {
-	start listening on reply_port
-
-	    If I get a json msg where the event code == NITRO_PING_REQUEST,
-	    ... call handle_ping_request(). (see base/event_tuples.h to see how
-	    ... the numeric value of NITRO_PING_REQUEST is built into a 32-bit
-	    ... number).
-
-	    If I get a json msg where the event code == NITRO_TERMINATE_REQUEST,
-	    ... call handle_terminate_request();
-
-	get ready to publish on publish_port (accept subscriber requests)
-
-	   call send_progress_report_thread_main();
-
-	return 0;
-}
-#endif
 
 } // end namespace nitro

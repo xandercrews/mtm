@@ -31,6 +31,7 @@ private:
 	struct data_t;
 	data_t * data;
 
+	void init_hosts(cmdline const &);
 	void progress_reporter();
 	bool report_progress;
 	int reporter_port;

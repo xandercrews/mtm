@@ -5,10 +5,9 @@
 
 namespace nitro {
 
-const int DEFAULT_PASSIVE_PORT = 47000;
-const int DEFAULT_ACTIVE_PORT = 47001;
-const char DEFAULT_ETHERNET_INTERFACE[] = "eth0";
-const char DEFAULT_IPC_ENDPOINT[] = "ipc:///tmp/nitro.pipe";
+const int DEFAULT_REPLY_PORT = 47000;
+const int DEFAULT_PUBLISH_PORT = 47001;
+const char * const DEFAULT_MULTICAST_INTERFACE = "eth0";
 const int DEFAULT_REPORTER_PORT = 35000;
 
 /**

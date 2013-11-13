@@ -5,6 +5,7 @@
 #include <thread>
 
 #include <string.h>
+#include <unistd.h>
 
 #include "base/dbc.h"
 #include "base/file_lines.h"
@@ -15,6 +16,7 @@
 #include "domain/coord_engine.h"
 #include "domain/event_codes.h"
 #include "domain/msg.h"
+#include "domain/zmq_helpers.h"
 
 #include "json/json.h"
 
@@ -33,150 +35,92 @@ struct coord_engine::data_t {
 	stringlist_t hostlist;
 	stringlist_t batches;
 	void * requester;
-	void * pgm_publisher;
-	void * ipc_publisher;
 	stringlist_t workers;
 
 	data_t() :
-			requester(0), pgm_publisher(0), ipc_publisher(0) {
+			requester(0) {
 	}
 };
 
 coord_engine::coord_engine(cmdline const & cmdline) :
 		engine(cmdline), data(new data_t) {
 
-	auto exec_host = cmdline.get_option("--exechost");
-	if (!exec_host) {
-		exec_host = getenv("exec_host");
-	}
-	if (exec_host) {
-		try {
-			file_lines fl(exec_host);
-			while (true) {
-				auto line = fl.next();
-				if (line == nullptr) {
-					break;
-				}
-#if 0
-				string ln(line);
-				split(ln, ',', hostlist);
-#else
-				data->hostlist.push_back(line);
-#endif
+	init_hosts(cmdline);
 
-			}
-			auto pargs = cmdline.get_positional_args();
-			for (auto batch : pargs) {
-				data->batches.push_back(batch);
-			}
-			return;
-		} catch (error_event const & e) {
-			// Must not be a file. Try raw list.
-#if 0
-			string eh(exec_host);
-			split(trim(eh), ',', hostlist);
-#else
-			data->hostlist.push_back(exec_host);
-#endif
-		}
-	}
+	bind_publisher_to_ipc("cpub");
 
-	// Create pub socket to send multicast job annonces
-	data->pgm_publisher = zmq_socket(ctx, ZMQ_PUB);
-	data->ipc_publisher = zmq_socket(ctx, ZMQ_PUB);
-	if (data->pgm_publisher && data->ipc_publisher) {
-
-		// bind socket for remote connections
-		auto eth =
-				cmdline.get_option("--ethernet", DEFAULT_ETHERNET_INTERFACE);
-		auto endpoint = interp("epgm://%1;239.192.1.1:5555", eth);
-		int rc = zmq_bind(data->pgm_publisher, endpoint.c_str());
-		xlog("pub socket bind result: %1", rc);
-
-		// bind socket for local connections
-		rc = zmq_bind(data->ipc_publisher, DEFAULT_IPC_ENDPOINT);
-		xlog("ipc pub socket bind result: %1", rc);
-	}
+	// bind socket for remote connections
+	auto iface = cmdline.get_option("--interface", DEFAULT_MULTICAST_INTERFACE);
+	// TODO: figure out what value to use for ip addr on next line...
+	auto endpoint = interp("epgm://%1;239.192.1.1:%2", iface,
+			get_publish_port());
+	zmq_bind_and_log(publisher, endpoint.c_str());
 
 	reporter_port = cmdline.get_option_as_int("--reporter",
 			DEFAULT_REPORTER_PORT);
 }
 
 coord_engine::~coord_engine() {
-	int linger = 0;
-	if (data->pgm_publisher) {
-		zmq_setsockopt(data->pgm_publisher, ZMQ_LINGER, &linger, sizeof(linger));
-		zmq_close(data->pgm_publisher);
-	}
-	if (data->ipc_publisher) {
-		zmq_setsockopt(data->ipc_publisher, ZMQ_LINGER, &linger, sizeof(linger));
-		zmq_close(data->ipc_publisher);
-	}
 	delete data;
 }
 
 void coord_engine::enroll_workers_multi(int eid) {
-	if (data->pgm_publisher && data->ipc_publisher) {
-		static const string cfm_port = "50000";
+	static const string cfm_port = "50000";
 
-		// Clear workers list
-		data->workers.clear();
+	// Clear workers list
+	data->workers.clear();
 
-		string json_msg = serialize_msg(eid, cfm_port);
-		zmq_msg_t msg, msg_copy;
+	string json_msg = serialize_msg(eid, cfm_port);
+	zmq_msg_t msg, msg_copy;
 
-		// Create 2 copy of message
-		zmq_msg_init_size(&msg, json_msg.size() + _subscription.size());
-		zmq_msg_init_size(&msg_copy, json_msg.size() + _subscription.size());
-		memcpy(zmq_msg_data(&msg), _subscription.c_str(), _subscription.size());
-		memcpy((char *) zmq_msg_data(&msg) + _subscription.size(),
-				json_msg.c_str(), json_msg.size());
-		zmq_msg_copy(&msg_copy, &msg);
+	// Create 2 copy of message
+	auto topic_len = strlen(COORDINATION_TOPIC);
+	auto total_len = json_msg.size() + topic_len;
+	zmq_msg_init_size(&msg, total_len);
+	zmq_msg_init_size(&msg_copy, total_len);
+	memcpy(zmq_msg_data(&msg), COORDINATION_TOPIC, topic_len);
+	memcpy((char *) zmq_msg_data(&msg) + topic_len, json_msg.c_str(),
+			json_msg.size());
+	zmq_msg_copy(&msg_copy, &msg);
 
-		// Send messages
-		int rc = zmq_sendmsg(data->pgm_publisher, &msg, 0);
-		xlog("pgm message sending: %1", rc);
+	// Send messages
+	int rc = zmq_sendmsg(publisher, &msg, 0);
+	xlog("message sending: %1", rc);
 
-		rc = zmq_sendmsg(data->ipc_publisher, &msg_copy, 0);
-		xlog("ipc message sending: %1", rc);
+	// Wait for the workers responses
+	void *cfm = zmq_socket(ctx, ZMQ_PULL);
+	if (cfm) {
+		string endpoint = interp("tcp://*:", cfm_port);
+		zmq_bind(cfm, endpoint.c_str());
 
-		// Wait for the workers responces
-		void *cfm = zmq_socket(ctx, ZMQ_PULL);
-		if (cfm) {
-			string endpoint = string("tcp://*:") + cfm_port;
-			zmq_bind(cfm, endpoint.c_str());
+		zmq_pollitem_t items[1];
+		items[0].socket = cfm;
+		items[0].events = ZMQ_POLLIN;
 
-			zmq_pollitem_t items[1];
-			items[0].socket = cfm;
-			items[0].events = ZMQ_POLLIN;
+		// Stop wating workers if no connection for 5 sec
+		xlog("waiting confirmations from workers...");
+		while ((rc = zmq_poll(items, sizeof(items) / sizeof(items[0]), 5000))
+				> 0) {
+			for (unsigned i = 0; i < sizeof(items) / sizeof(items[0]);
+					i++) {
+				if (items[i].revents & ZMQ_POLLIN) {
+					Json::Value root;
+					string json = receive_full_msg(items[i].socket);
 
-			// Stop wating workers if no connection for 5 sec
-			xlog("waiting confirmations from workers...");
-			while ((rc = zmq_poll(items, sizeof(items) / sizeof(items[0]), 5000))
-					> 0) {
-				for (unsigned i = 0; i < sizeof(items) / sizeof(items[0]);
-						i++) {
-					if (items[i].revents & ZMQ_POLLIN) {
-						Json::Value root;
-						string json = receive_full_msg(items[i].socket);
-
-						if (deserialize_msg(json, root)) {
-							data->workers.push_back(
-									root["body"]["message"].asCString());
-							xlog("Got response from worker: %1",
-									root["body"]["message"].asCString());
-						}
+					if (deserialize_msg(json, root)) {
+						data->workers.push_back(
+								root["body"]["message"].asCString());
+						xlog("Got response from worker: %1",
+								root["body"]["message"].asCString());
 					}
 				}
 			}
-
-			int linger = 0;
-			zmq_setsockopt(cfm, ZMQ_LINGER, &linger, sizeof(linger));
-			zmq_close(cfm);
-			xlog("... done waiting confirmations from workers");
-
-			// TODO: connect directly to missed workerks
 		}
+
+		zmq_close_now(cfm);
+		xlog("... done waiting confirmations from workers");
+
+		// TODO: connect directly to missed workerks
 	}
 }
 
@@ -193,8 +137,7 @@ void coord_engine::enroll_workers(int eid) {
 			for (auto host : data->hostlist) {
 				data->requester = zmq_socket(ctx, ZMQ_REQ);
 				auto endpoint = interp("tcp://%1", host);
-				int rc;
-				tryz(zmq_connect(data->requester, endpoint.c_str()));
+				zmq_connect_and_log(data->requester, endpoint.c_str());
 				auto msg = serialize_msg(eid);
 				send_full_msg(data->requester, msg);
 				auto response = receive_full_msg(data->requester);
@@ -340,5 +283,42 @@ int coord_engine::do_run() {
 	return 0;
 }
 
+void coord_engine::init_hosts(cmdline const & cmdline) {
+	auto exec_host = cmdline.get_option("--exechost");
+	if (!exec_host) {
+		exec_host = getenv("exec_host");
+	}
+	if (exec_host) {
+		try {
+			file_lines fl(exec_host);
+			while (true) {
+				auto line = fl.next();
+				if (line == nullptr) {
+					break;
+				}
+#if 0
+				string ln(line);
+				split(ln, ',', hostlist);
+#else
+				data->hostlist.push_back(line);
+#endif
+
+			}
+			auto pargs = cmdline.get_positional_args();
+			for (auto batch : pargs) {
+				data->batches.push_back(batch);
+			}
+			return;
+		} catch (error_event const & e) {
+			// Must not be a file. Try raw list.
+#if 0
+			string eh(exec_host);
+			split(trim(eh), ',', hostlist);
+#else
+			data->hostlist.push_back(exec_host);
+#endif
+		}
+	}
 }
- // end namespace nitro
+
+} // end namespace nitro

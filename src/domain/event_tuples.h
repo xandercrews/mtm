@@ -30,6 +30,12 @@ EVENT(NITRO_BAD_WALLTIME_1VALUE, error, user, 3,
 		" d:h:m:s.",
 		"")
 
+EVENT(NITRO_MSG_TOO_BIG_1SIZE, error, admin, 4,
+		"domain.nitro.input",
+		"Receive a message too big to accept (size >= %1). Communication"
+		" discarded.",
+		"")
+
 EVENT(NITRO_HERE_IS_ASSIGNMENT, info, internal, 100,
 		"domain.nitro.coordinate",
 		"Here is an assignment of a few new commands to run.",

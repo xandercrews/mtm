@@ -5,15 +5,21 @@
 #include <string>
 
 namespace zmq {
-	class context_t;
+class context_t;
 }
 
 namespace nitro {
 
-const char * const INPROC_PASSIVE_BINDING = "inproc://passive%1{engine_id}";
-const char * const INPROC_ACTIVE_BINDING = "inproc://active%1{engine_id}";
+const char * const IPC_PUB_BINDING = "inproc://nitro-%1{pid}-%2{style}";
+extern const unsigned MAX_HARDWARE_THREADS;
 
 class cmdline;
+
+/**
+ * Engines subscribe to this topic to hear messages that they need to handle
+ * to interoperate.
+ */
+extern const char * const COORDINATION_TOPIC;
 
 /**
  * A base class for the workhorses of our application.
@@ -91,7 +97,8 @@ protected:
 	void * const & responder;
 	void * const & publisher;
 
-  static const std::string _subscription;
+	// Derived classes should call this at the end of their constructor.
+	void bind_publisher_to_ipc(char const * style);
 
 private:
 	int reply_port;
@@ -100,8 +107,8 @@ private:
 	void * _responder;
 	void * _publisher;
 	std::string id;
-	std::string inproc_endpoint;
-	std::string tcp_endpoint;
+	std::string ipc_pub_endpoint;
+	std::string tcp_pub_endpoint;
 };
 
 /**

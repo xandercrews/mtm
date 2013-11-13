@@ -15,7 +15,7 @@
 using namespace nitro;
 
 engine::handle make_coord_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"progname", "--replyport", "52500",
+	char const * def_args[] = {"nitro", "--replyport", "52500",
 			"--publishport", "52501", "--exechost", "localhost"};
 	if (!args) {
 		args = def_args;
@@ -31,7 +31,7 @@ engine::handle make_coord_engine(char const ** args = NULL, int argc = 0) {
 }
 
 engine::handle make_worker_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"progname", "--replyport", "52502",
+	char const * def_args[] = {"nitro", "--replyport", "52502",
 			"--publishport", "52503", "--workfor", "tcp://localhost:52500"};
 	if (!args) {
 		args = def_args;
@@ -67,6 +67,7 @@ TEST(engine_test, coord_and_worker_can_coexist_on_same_box) {
 
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
 
+#if 0
 void coord_listener_thread_main(coord_engine const & coord,
 		std::vector<std::string> & ) {
 
@@ -86,3 +87,21 @@ void coord_listener_thread_main(coord_engine const & coord,
 		fprintf(stderr, "%s\n", e.what());
 	}
 }
+
+TEST(engine_test, complete_batch_lifecycle) {
+	auto coord = make_coord_engine();
+	std::vector<std::string> msgs;
+	// Have to do a little casting here. engine_handle is a handle to the base
+	// class, but we need to pass a ref to the derived class...
+	auto coord_ptr = reinterpret_cast<coord_engine *>(coord.get());
+	std::thread listener(coord_listener_thread_main, std::ref(*coord_ptr),
+			std::ref(msgs));
+	coord->run();
+}
+
+TEST(engine_test, run_sample_batch) {
+	auto coord = make_coord_engine();
+	coord->run();
+	exit(0);
+}
+#endif
