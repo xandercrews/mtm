@@ -13,10 +13,10 @@ using namespace nitro::event_codes;
 namespace nitro {
 
 assignment::assignment(char const * id) :
-		id(id && *id ? id : generate_guid().c_str()), taskmap() {
+		id(id && *id ? id : generate_guid().c_str()) {
 }
 
-assignment::assignment(char const * id, char const * lines) : id(id), taskmap() {
+assignment::assignment(char const * id, char const * lines) : id(id) {
 	fill_from_lines(lines);
 }
 
@@ -27,16 +27,19 @@ void assignment::fill_from_lines(char const * lines) {
 			while (isspace(*p)) {
 				++p;
 			}
-			auto end = strpbrk(lines, "\r\n");
+			if (*p == 0) {
+				break;
+			}
+			auto end = strpbrk(p, "\r\n");
 			if (!end) {
-				end = strchr(lines, 0);
+				end = strchr(p, 0);
 			}
 			while (end >= p && isspace(*end)) {
 				--end;
 			}
 			++end;
 			if (end > p) {
-				add_task(++n, end);
+				ready_task(++n, end);
 			}
 			p = end;
 		}
@@ -47,24 +50,45 @@ char const * assignment::get_id() const {
 	return id.c_str();
 }
 
-task * assignment::add_task(task::id_type tid, char const * cmdline,
+task * assignment::ready_task(task::id_type tid, char const * cmdline,
 		char const * end_of_cmdline) {
 	auto t = task::make(cmdline, end_of_cmdline, this, tid).release();
 	if (t) {
-		taskmap.insert(std::make_pair(t->get_id(), task::handle(t)));
+		lists[task_status::ts_ready].push_back(task::handle(t));
 	}
 	return t;
 }
 
-void assignment::complete_task(task::id_type tid) {
-	auto t = taskmap.find(tid);
-	if (t != taskmap.end()) {
-		taskmap[tid].reset();
+void assignment::activate_task(task::id_type tid) {
+	// Although this loop looks moderately expensive, it should, in practice,
+	// be virtually instantaneous, because we are always going to activate
+	// the first item in the ready list.
+	tasklist_t & alist = lists[task_status::ts_active];
+	tasklist_t & rlist = lists[task_status::ts_ready];
+	for (auto i = rlist.begin(); i != rlist.end(); ++i) {
+		task::handle & thandle = *i;
+		if (thandle->get_id() == tid) {
+			alist.push_back(task::handle(thandle.release()));
+			rlist.erase(i);
+			return;
+		}
 	}
 }
 
-assignment::taskmap_t const & assignment::get_taskmap() const {
-	return taskmap;
+void assignment::complete_task(task::id_type tid) {
+	// Although this loop looks moderately expensive, it should, in practice,
+	// be cheap, because we are always going to have only a handful of active
+	// items.
+	tasklist_t & alist = lists[task_status::ts_active];
+	tasklist_t & clist = lists[task_status::ts_complete];
+	for (auto i = alist.begin(); i != alist.end(); ++i) {
+		task::handle & thandle = *i;
+		if (thandle->get_id() == tid) {
+			clist.push_back(task::handle(thandle.release()));
+			alist.erase(i);
+			return;
+		}
+	}
 }
 
 string assignment::get_request_msg() const {
@@ -74,9 +98,10 @@ string assignment::get_request_msg() const {
 	Json::Value body;
 	body["code"] = events::get_std_id_repr(NITRO_HERE_IS_ASSIGNMENT);
 	Json::Value tasks;
-	for (auto i = taskmap.cbegin(); i != taskmap.cend(); ++i) {
-		auto key = interp("%1", i->first);
-		tasks[key] = i->second->get_cmdline();
+	tasklist_t const & rlist = lists[task_status::ts_ready];
+	for (auto i = rlist.cbegin(); i != rlist.cend(); ++i) {
+		auto key = interp("%1", (*i)->get_id());
+		tasks[key] = (*i)->get_cmdline();
 	}
 	body["tasks"] = tasks;
 	root["body"] = body;
@@ -92,23 +117,23 @@ string assignment::get_status_msg() const {
 	root["senderId"] = "nitro@localhost"; // TODO: fix
 	root["body"]["code"] = events::get_std_id_repr(NITRO_ASSIGNMENT_PROGRESS_REPORT);
 	Json::Value status;
-	int pending_count = 0;
-	int done_count = 0;
+	int counts[3];
 	Json::Value pending(Json::arrayValue);
 	Json::Value done(Json::arrayValue);
-	for (auto i = taskmap.cbegin(); i != taskmap.cend(); ++i) {
-		auto idstr = interp("%1", i->first);
-		if (i->second) {
-			pending[pending_count++] = idstr;
-		} else {
-			done[done_count++] = idstr;
+	for (task_status stat = task_status::ts_ready;
+			stat <= task_status::ts_complete; ++stat) {
+		counts[stat] = 0;
+		Json::Value items(Json::arrayValue);
+		tasklist_t const & tlist = lists[stat];
+		for (auto i = tlist.cbegin(); i != tlist.cend(); ++i) {
+			auto idstr = interp("%1", (*i)->get_id());
+			items[counts[stat]++] = idstr;
 		}
+		auto name = get_status_name(stat);
+		auto count_key = interp("%1_count", name);
+		status[name] = items;
+		status[count_key] = counts[stat];
 	}
-	status["assigned_count"] = done_count + pending_count;
-	status["done_count"] = done_count;
-	status["done"] = done;
-	status["pending_count"] = pending_count;
-	status["pending"] = pending;
 	root["body"]["status"] = status;
 	Json::StyledWriter writer;
 	return writer.write(root);

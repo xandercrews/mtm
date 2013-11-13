@@ -51,9 +51,9 @@ EVENT(NITRO_AFFIRM_HELP, info, internal, 102,
 		"Sure, I'll help.",
 		"")
 
-EVENT(NITRO_DENY_HELP, info, internal, 103,
+EVENT(NITRO_DENY_HELP_1REASON, info, internal, 103,
 		"domain.nitro.coordinate",
-		"No can do. Sorry.",
+		"No can do. Sorry. %1",
 		"")
 
 EVENT(NITRO_NEED_ASSIGNMENT, info, internal, 104,
@@ -89,6 +89,16 @@ EVENT(NITRO_PING_REQUEST, info, internal, 109,
 EVENT(NITRO_PING_RESPONSE, info, internal, 110,
 		"domain.nitro.coordinate",
 		"I am alive, and I've responded as you asked.",
+		"")
+
+EVENT(NITRO_ACCEPT_ASSIGNMENT, info, internal, 111,
+		"domain.nitro.coordinate",
+		"Assignment accepted.",
+		"")
+
+EVENT(NITRO_REJECT_ASSIGNMENT_1REASON, info, internal, 112,
+		"domain.nitro.coordinate",
+		"Assignment rejected. Reason: %1.",
 		"")
 
 #undef EVENT

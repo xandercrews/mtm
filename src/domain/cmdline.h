@@ -9,6 +9,7 @@ const int DEFAULT_REPLY_PORT = 47000;
 const int DEFAULT_PUBLISH_PORT = 47001;
 const char * const DEFAULT_MULTICAST_INTERFACE = "eth0";
 const int DEFAULT_REPORTER_PORT = 35000;
+const int DEFAULT_KEEPALIVE = 5000;
 
 /**
  * Parses nitro cmdline and provides logic to react.

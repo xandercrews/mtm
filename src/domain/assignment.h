@@ -1,7 +1,7 @@
 #ifndef _DOMAIN_ASSIGNMENT_H_
 #define _DOMAIN_ASSIGNMENT_H_
 
-#include <map>
+#include <list>
 #include <string>
 
 #include "domain/task.h"
@@ -35,19 +35,22 @@ public:
 	 */
 	std::string get_status_msg() const;
 
-	task * add_task(task::id_type tid, char const * cmdline,
+	task * ready_task(task::id_type tid, char const * cmdline,
 			char const * end_of_cmdline=nullptr);
 
+	void activate_task(task::id_type tid);
 	void complete_task(task::id_type tid);
 
-	typedef std::map<task::id_type, task::handle> taskmap_t;
-	taskmap_t const & get_taskmap() const;
+	typedef std::list<task::handle> tasklist_t;
+	tasklist_t const & get_list_by_status(task_status status) const;
+
+	typedef std::unique_ptr<assignment> handle;
 
 private:
 	void fill_from_lines(char const * lines);
 
 	std::string id;
-	taskmap_t taskmap;
+	tasklist_t lists[3];
 };
 
 } // end namespace nitro

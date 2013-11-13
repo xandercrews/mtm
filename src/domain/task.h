@@ -20,6 +20,9 @@ public:
 
 	id_type get_id() const;
 
+	int get_exit_code() const;
+	void set_exit_code(int value);
+
 	char const * get_cmdline() const;
 	virtual int get_priority() const = 0;
 	virtual double get_walltime_seconds() const = 0;
@@ -49,8 +52,23 @@ private:
 	std::string cmdline;
 	assignment * asgn;
 	uint64_t id;
-
+	int exit_code;
 };
+
+enum task_status {
+	ts_ready,
+	ts_active,
+	ts_complete
+};
+
+/** Allow task_status to be incremented with prefix: ++status. */
+task_status & operator ++(task_status &);
+
+/** Allow task_status to be incremented with postfix: status++. */
+task_status operator ++(task_status &, int);
+
+/** Lookup friendly name for the status. */
+char const * get_status_name(task_status);
 
 } // end namespace nitro
 

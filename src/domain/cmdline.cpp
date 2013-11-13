@@ -31,7 +31,7 @@ char const * cmdline::get_valid_flags() const {
  */
 char const * cmdline::get_valid_options() const {
 	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e"
-			"|--interface|-i|--reportport|-p|";
+			"|--interface|-i|--reportport";
 }
 
 char const * cmdline::get_default_program_name() const {
