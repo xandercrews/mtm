@@ -1,5 +1,7 @@
 #include <condition_variable>
 #include <thread>
+#include <mutex>
+#include <list>
 #include <string.h>
 
 #include "base/dbc.h"
@@ -21,55 +23,64 @@ using namespace nitro::event_codes;
 
 namespace nitro {
 
+typedef std::list<thread> threadlist_t;
+
+struct worker_engine::data_t {
+	void * subscriber;
+	threadlist_t threadlist;
+};
+
 worker_engine::worker_engine(cmdline const & cmdline) :
-		engine(cmdline) {
+		engine(cmdline), data(new data_t) {
 
-    _job_announce_sub = zmq_socket(ctx,ZMQ_SUB);
-    if (_job_announce_sub) {
-      string eth = cmdline.get_option("--ethernet") ? cmdline.get_option("--ethernet") : DEFAULT_ETHERNET_INTERFACE;    
-      string endpoint = "epgm://" + eth + ";239.192.1.1:5555";
-      
-      zmq_setsockopt(_job_announce_sub, ZMQ_SUBSCRIBE, _subscription.c_str(), _subscription.size());
+	auto subscriber = zmq_socket(ctx, ZMQ_SUB);
+	data->subscriber = subscriber;
+	if (subscriber) {
+		string eth = cmdline.get_option("--ethernet",
+				DEFAULT_ETHERNET_INTERFACE);
+		string endpoint = "epgm://" + eth + ";239.192.1.1:5555";
 
-      int rc = zmq_connect(_job_announce_sub, endpoint.c_str());
-      xlog("connect to pgm: %1", rc);
-      rc = zmq_connect(_job_announce_sub, DEFAULT_IPC_ENDPOINT);
-      xlog("connect to ipc: %1", rc);
-    }
+		zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, _subscription.c_str(),
+				_subscription.size());
+
+		int rc = zmq_connect(subscriber, endpoint.c_str());
+		xlog("connect to pgm: %1", rc);
+		rc = zmq_connect(subscriber, DEFAULT_IPC_ENDPOINT);
+		xlog("connect to ipc: %1", rc);
+	}
 }
 
 worker_engine::~worker_engine() {
-  int linger = 0;
-  if (_job_announce_sub) {
-    zmq_setsockopt(_job_announce_sub, ZMQ_LINGER, &linger, sizeof(linger));
-    zmq_close(_job_announce_sub);
-  }
+	int linger = 0;
+	if (data->subscriber) {
+		zmq_setsockopt(data->subscriber, ZMQ_LINGER, &linger, sizeof(linger));
+		zmq_close(data->subscriber);
+	}
+	delete data;
 }
 
 int worker_engine::do_run() {
 
-  if (_job_announce_sub) {
-    Json::Value root;
+	if (data->subscriber) {
+		Json::Value root;
 
-    // Waits for request from the server
-    xlog("waiting for coordinator...");
-    string json = receive_full_msg(_job_announce_sub);
+		// Waits for request from the server
+		xlog("waiting for coordinator...");
+		string json = receive_full_msg(data->subscriber);
 
-    if (json.size()
-        && deserialize_msg(json, root) )
-    {
-      switch (root["body"]["code"].asInt()) {
-        case NITRO_REQUEST_HELP:
-          xlog("got request help command");
-          // TODO: send response 
-          break;
-          
-        default:
-          xlog("got unknown command");
-          break;
-        }
-    }
-  }
+		if (json.size() && deserialize_msg(json, root)) {
+			switch (root["body"]["code"].asInt()) {
+			case NITRO_REQUEST_HELP:
+				xlog("got request help command");
+				// TODO: send response
+				break;
+
+			default:
+				xlog("got unknown command");
+				break;
+			}
+		}
+	}
 	return 0;
 }
 

@@ -42,7 +42,8 @@ public:
 	 *     Always use the long form. Short-form equivalents are checked automatically.
 	 */
 
-	char const * get_option(char const * full_option_name) const;
+	char const * get_option(char const * full_option_name,
+			char const * default_value = nullptr) const;
 
 	/**
 	 * A convenience method that looks for an option with the specified name.

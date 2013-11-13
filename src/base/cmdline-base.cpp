@@ -93,7 +93,8 @@ cmdline_base::options_t const & cmdline_base::get_options() const {
 	return options;
 }
 
-char const * cmdline_base::get_option(char const * full_option_name) const {
+char const * cmdline_base::get_option(char const * full_option_name,
+		char const * default_value) const {
 	if (full_option_name && *full_option_name == '-') {
 		for (auto Option : options) {
 			if (matches_switch(Option.first, full_option_name)) {
@@ -101,7 +102,7 @@ char const * cmdline_base::get_option(char const * full_option_name) const {
 			}
 		}
 	}
-	return NULL;
+	return default_value;
 }
 
 int cmdline_base::get_option_as_int(char const * full_option_name, int bad)

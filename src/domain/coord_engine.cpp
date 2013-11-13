@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <condition_variable>
+#include <mutex>
+#include <vector>
 #include <thread>
+
 #include <string.h>
 
 #include "base/dbc.h"
@@ -17,13 +20,30 @@
 
 #include "zeromq/include/zmq.h"
 
-using namespace std;
+using std::string;
+using std::chrono::milliseconds;
+
 using namespace nitro::event_codes;
 
 namespace nitro {
 
+struct coord_engine::data_t {
+
+	std::unique_ptr<file_lines> current_batch_file;
+	stringlist_t hostlist;
+	stringlist_t batches;
+	void * requester;
+	void * pgm_publisher;
+	void * ipc_publisher;
+	stringlist_t workers;
+
+	data_t() :
+			requester(0), pgm_publisher(0), ipc_publisher(0) {
+	}
+};
+
 coord_engine::coord_engine(cmdline const & cmdline) :
-		engine(cmdline), requester(0) {
+		engine(cmdline), data(new data_t) {
 
 	auto exec_host = cmdline.get_option("--exechost");
 	if (!exec_host) {
@@ -41,13 +61,13 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 				string ln(line);
 				split(ln, ',', hostlist);
 #else
-				hostlist.push_back(line);
+				data->hostlist.push_back(line);
 #endif
 
 			}
 			auto pargs = cmdline.get_positional_args();
-			for (auto batch: pargs) {
-				batches.push_back(batch);
+			for (auto batch : pargs) {
+				data->batches.push_back(batch);
 			}
 			return;
 		} catch (error_event const & e) {
@@ -56,134 +76,134 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 			string eh(exec_host);
 			split(trim(eh), ',', hostlist);
 #else
-			hostlist.push_back(exec_host);
+			data->hostlist.push_back(exec_host);
 #endif
 		}
 	}
 
-  // Create pub socket to send multicast job annonces 
-  _job_annonce_pgm = zmq_socket(ctx, ZMQ_PUB);
-  _job_annonce_ipc = zmq_socket(ctx, ZMQ_PUB);
-  if (_job_annonce_pgm
-      && _job_annonce_ipc) {
+	// Create pub socket to send multicast job annonces
+	data->pgm_publisher = zmq_socket(ctx, ZMQ_PUB);
+	data->ipc_publisher = zmq_socket(ctx, ZMQ_PUB);
+	if (data->pgm_publisher && data->ipc_publisher) {
 
-    // bind socket for remote connections
-    std::string eth = cmdline.get_option("--ethernet") ? cmdline.get_option("--ethernet") : DEFAULT_ETHERNET_INTERFACE;    
-    std::string endpoint = "epgm://" + eth + ";239.192.1.1:5555";
-    int rc = zmq_bind(_job_annonce_pgm,endpoint.c_str());
-    xlog("pub socket bind result: %1", rc);
+		// bind socket for remote connections
+		auto eth =
+				cmdline.get_option("--ethernet", DEFAULT_ETHERNET_INTERFACE);
+		auto endpoint = interp("epgm://%1;239.192.1.1:5555", eth);
+		int rc = zmq_bind(data->pgm_publisher, endpoint.c_str());
+		xlog("pub socket bind result: %1", rc);
 
-    // bind socket for local connections
-    rc = zmq_bind(_job_annonce_ipc, DEFAULT_IPC_ENDPOINT);
-    xlog("ipc pub socket bind result: %1", rc);
-  }
+		// bind socket for local connections
+		rc = zmq_bind(data->ipc_publisher, DEFAULT_IPC_ENDPOINT);
+		xlog("ipc pub socket bind result: %1", rc);
+	}
 
-  reporter_port = cmdline.get_option_as_int("--reporter", DEFAULT_REPORTER_PORT);
+	reporter_port = cmdline.get_option_as_int("--reporter",
+			DEFAULT_REPORTER_PORT);
 }
 
 coord_engine::~coord_engine() {
-  int linger = 0;
-  if (_job_annonce_pgm) {
-    zmq_setsockopt(_job_annonce_pgm, ZMQ_LINGER, &linger, sizeof(linger));
-    zmq_close(_job_annonce_pgm);
-  }
-  if (_job_annonce_ipc) {
-    zmq_setsockopt(_job_annonce_ipc, ZMQ_LINGER, &linger, sizeof(linger));
-    zmq_close(_job_annonce_ipc);
-  }
+	int linger = 0;
+	if (data->pgm_publisher) {
+		zmq_setsockopt(data->pgm_publisher, ZMQ_LINGER, &linger, sizeof(linger));
+		zmq_close(data->pgm_publisher);
+	}
+	if (data->ipc_publisher) {
+		zmq_setsockopt(data->ipc_publisher, ZMQ_LINGER, &linger, sizeof(linger));
+		zmq_close(data->ipc_publisher);
+	}
+	delete data;
 }
 
-void coord_engine::enroll_workers_multi(int eid)
-{
-  if (_job_annonce_pgm
-      && _job_annonce_ipc) 
-  {
-    static const string cfm_port="50000";
+void coord_engine::enroll_workers_multi(int eid) {
+	if (data->pgm_publisher && data->ipc_publisher) {
+		static const string cfm_port = "50000";
 
-    // Clear workers list
-    _workers.clear();
+		// Clear workers list
+		data->workers.clear();
 
-    string json_msg = serialize_msg(eid, cfm_port);
-    zmq_msg_t msg, msg_copy;
+		string json_msg = serialize_msg(eid, cfm_port);
+		zmq_msg_t msg, msg_copy;
 
-    // Create 2 copy of message
-    zmq_msg_init_size(&msg, json_msg.size() + _subscription.size());
-    zmq_msg_init_size(&msg_copy, json_msg.size() + _subscription.size());
-    memcpy(zmq_msg_data(&msg), _subscription.c_str(), _subscription.size());
-    memcpy((char *)zmq_msg_data(&msg) + _subscription.size(), json_msg.c_str(), json_msg.size());
-    zmq_msg_copy(&msg_copy, &msg);
+		// Create 2 copy of message
+		zmq_msg_init_size(&msg, json_msg.size() + _subscription.size());
+		zmq_msg_init_size(&msg_copy, json_msg.size() + _subscription.size());
+		memcpy(zmq_msg_data(&msg), _subscription.c_str(), _subscription.size());
+		memcpy((char *) zmq_msg_data(&msg) + _subscription.size(),
+				json_msg.c_str(), json_msg.size());
+		zmq_msg_copy(&msg_copy, &msg);
 
-    // Send messages
-    int rc = zmq_sendmsg(_job_annonce_pgm, &msg, 0);
-    xlog("pgm message sending: %1", rc);
+		// Send messages
+		int rc = zmq_sendmsg(data->pgm_publisher, &msg, 0);
+		xlog("pgm message sending: %1", rc);
 
-    rc = zmq_sendmsg(_job_annonce_ipc, &msg_copy, 0);
-    xlog("ipc message sending: %1", rc);
+		rc = zmq_sendmsg(data->ipc_publisher, &msg_copy, 0);
+		xlog("ipc message sending: %1", rc);
 
-    // Wait for the workers responces
-    void *cfm = zmq_socket(ctx, ZMQ_PULL);
-    if (cfm) {
-      string endpoint = string("tcp://*:") + cfm_port;
-      zmq_bind(cfm, endpoint.c_str());
+		// Wait for the workers responces
+		void *cfm = zmq_socket(ctx, ZMQ_PULL);
+		if (cfm) {
+			string endpoint = string("tcp://*:") + cfm_port;
+			zmq_bind(cfm, endpoint.c_str());
 
-      zmq_pollitem_t items [1];
-      items[0].socket = cfm;
-      items[0].events = ZMQ_POLLIN;
+			zmq_pollitem_t items[1];
+			items[0].socket = cfm;
+			items[0].events = ZMQ_POLLIN;
 
-      // Stop wating workers if no connection for 5 sec
-      xlog("waiting confirmations from workers...");
-      while ( (rc = zmq_poll(items, sizeof(items) / sizeof(items[0]), 5000)) > 0 )
-      {
-        for (unsigned i = 0; i < sizeof(items) / sizeof(items[0]); i++)
-        {
-          if (items[i].revents & ZMQ_POLLIN)
-          {
-            Json::Value root;
-            string json = receive_full_msg(items[i].socket);
+			// Stop wating workers if no connection for 5 sec
+			xlog("waiting confirmations from workers...");
+			while ((rc = zmq_poll(items, sizeof(items) / sizeof(items[0]), 5000))
+					> 0) {
+				for (unsigned i = 0; i < sizeof(items) / sizeof(items[0]);
+						i++) {
+					if (items[i].revents & ZMQ_POLLIN) {
+						Json::Value root;
+						string json = receive_full_msg(items[i].socket);
 
-            if (deserialize_msg(json, root))
-            {
-              _workers.push_back(root["body"]["message"].asCString());
-              xlog("Got response from worker: %1", root["body"]["message"].asCString());
-            }
-          }
-        }
-      }
+						if (deserialize_msg(json, root)) {
+							data->workers.push_back(
+									root["body"]["message"].asCString());
+							xlog("Got response from worker: %1",
+									root["body"]["message"].asCString());
+						}
+					}
+				}
+			}
 
-      int linger = 0;  
-      zmq_setsockopt(cfm, ZMQ_LINGER, &linger, sizeof(linger));
-      zmq_close(cfm);
-      xlog("... done waiting confirmations from workers");
+			int linger = 0;
+			zmq_setsockopt(cfm, ZMQ_LINGER, &linger, sizeof(linger));
+			zmq_close(cfm);
+			xlog("... done waiting confirmations from workers");
 
-      // TODO: connect directly to missed workerks
-    }
-  }
+			// TODO: connect directly to missed workerks
+		}
+	}
 }
 
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
 
 void coord_engine::enroll_workers(int eid) {
 #if 1
-	if (hostlist.empty()) {
-		hostlist.push_back("localhost:36000");
+	if (data->hostlist.empty()) {
+		data->hostlist.push_back("localhost:36000");
 	}
 #endif
-	if (!hostlist.empty()) {
+	if (!data->hostlist.empty()) {
 		try {
-			for (auto host: hostlist) {
-				requester = zmq_socket(ctx, ZMQ_REQ);
-				string endpoint = interp("tcp://%1", host);
+			for (auto host : data->hostlist) {
+				data->requester = zmq_socket(ctx, ZMQ_REQ);
+				auto endpoint = interp("tcp://%1", host);
 				int rc;
-				tryz(zmq_connect(requester, endpoint.c_str()));
-				string msg = serialize_msg(eid);
-				send_full_msg(requester, msg);
-				auto response = receive_full_msg(requester);
+				tryz(zmq_connect(data->requester, endpoint.c_str()));
+				auto msg = serialize_msg(eid);
+				send_full_msg(data->requester, msg);
+				auto response = receive_full_msg(data->requester);
 				// TODO: check response
 				xlog("Enrolled %1.", endpoint);
-				zmq_close(requester);
+				zmq_close(data->requester);
 			}
 		} catch (error_event const & e) {
-			zmq_close(requester);
+			zmq_close(data->requester);
 			throw;
 		}
 	}
@@ -193,17 +213,17 @@ coord_engine::assignment_t coord_engine::next_assignment() {
 	const auto MAX_SIZE = 1000;
 	assignment_t new_a;
 	while (true) {
-		if (!current_batch_file) {
-			if (batches.empty()) {
+		if (!data->current_batch_file) {
+			if (data->batches.empty()) {
 				return new_a;
 			} else {
-				auto fl = new file_lines(batches.front().c_str());
-				current_batch_file = std::unique_ptr<file_lines>(fl);
-				batches.erase(batches.begin());
+				auto fl = new file_lines(data->batches.front().c_str());
+				data->current_batch_file = std::unique_ptr < file_lines > (fl);
+				data->batches.erase(data->batches.begin());
 			}
 		}
 		while (true) {
-			auto line = current_batch_file->next();
+			auto line = data->current_batch_file->next();
 			if (line) {
 				if (!new_a) {
 					new_a = assignment_t(new stringlist_t);
@@ -213,7 +233,7 @@ coord_engine::assignment_t coord_engine::next_assignment() {
 					return new_a;
 				}
 			} else {
-				current_batch_file.reset();
+				data->current_batch_file.reset();
 			}
 		}
 	}
@@ -221,7 +241,7 @@ coord_engine::assignment_t coord_engine::next_assignment() {
 
 void coord_engine::prioritize(assignment_t & asgn) {
 	struct priority_func {
-		int operator ()(std::string const & a, std::string const & b) {
+		int operator ()(string const & a, string const & b) {
 			// Here we could parse strings a and b and see if userprio was set,
 			// and generate a sort key for each. In the long run, we probably
 			// want to change the assignment_t datatype so it's not a list of
@@ -234,11 +254,11 @@ void coord_engine::prioritize(assignment_t & asgn) {
 }
 
 void coord_engine::distribute(assignment_t & asgn) {
-	auto host = hostlist.begin();
-    for (auto cmd : *asgn) {
+	auto host = data->hostlist.begin();
+	for (auto cmd : *asgn) {
 		auto endpoint = interp("tcp://%1", *host);
 		void * requester;
-    	try {
+		try {
 			requester = zmq_socket(ctx, ZMQ_REQ);
 			int rc;
 			tryz(zmq_connect(requester, endpoint.c_str()));
@@ -247,57 +267,54 @@ void coord_engine::distribute(assignment_t & asgn) {
 			// Process ACK
 			receive_full_msg(requester);
 			++host;
-			if (host == hostlist.end()) {
-				host = hostlist.begin();
+			if (host == data->hostlist.end()) {
+				host = data->hostlist.begin();
 			}
 			zmq_close(requester);
-    	} catch (error_event const & e) {
-    		zmq_close(requester);
-    	}
-    }
+		} catch (error_event const & e) {
+			zmq_close(requester);
+		}
+	}
 }
 
-void coord_engine::progress_reporter()
-{
-  int rc = -1;
+void coord_engine::progress_reporter() {
+	int rc = -1;
 
-  // Socket for worker control
-  void *reporter = zmq_socket (ctx, ZMQ_PUB);
-  if (reporter){
-    string endpoint = string("tcp://*:") + to_string(reporter_port);
-    rc = zmq_bind(reporter, endpoint.c_str());
-    xlog("reporter bind to socket %1 result %2", reporter_port, rc);
-  }
+	// Socket for worker control
+	void *reporter = zmq_socket(ctx, ZMQ_PUB);
+	if (reporter) {
+		auto endpoint = interp("tcp://*:%1", reporter_port);
+		rc = zmq_bind(reporter, endpoint.c_str());
+		xlog("reporter bind to socket %1 result %2", reporter_port, rc);
+	}
 
-  xlog("Start sending reports each second");
+	xlog("Start sending reports each second");
 
-  while (report_progress
-         && !rc) {
-    string progress = "Progress(50%): So far done 500 jobs from 1000";
-    auto msg = serialize_msg(NITRO_BATCH_PROGRESS_REPORT, progress);
-    send_full_msg(reporter, msg);    
-    sleep(1);
-  }
+	while (report_progress && !rc) {
+		string progress = "Progress(50%): So far done 500 jobs from 1000";
+		auto msg = serialize_msg(NITRO_BATCH_PROGRESS_REPORT, progress);
+		send_full_msg(reporter, msg);
+		sleep(1);
+	}
 
-  if (reporter) {
-    zmq_close(reporter);    
-  }
+	if (reporter) {
+		zmq_close(reporter);
+	}
 
-  xlog("Before report thread exit");
+	xlog("Before report thread exit");
 }
-
 
 int coord_engine::do_run() {
-  
-  report_progress = true;
-  std::thread t1(&coord_engine::progress_reporter, this);
+
+	report_progress = true;
+	std::thread t1(&coord_engine::progress_reporter, this);
 
 	// This is totally the wrong way to do dispatch of assignments. I'm
 	// completely abusing zmq by short-circuiting its own fair share routing
 	// and by creating and destroying sockets right and left. I've only done
 	// it this way to get some logic running that I can improve incrementally.
 
-  enroll_workers_multi(NITRO_REQUEST_HELP);
+	enroll_workers_multi(NITRO_REQUEST_HELP);
 	enroll_workers(NITRO_REQUEST_HELP);
 
 	while (true) {
@@ -311,29 +328,17 @@ int coord_engine::do_run() {
 	}
 
 	enroll_workers(NITRO_TERMINATE_REQUEST);
-	this_thread::sleep_for(chrono::milliseconds(100));
+	std::this_thread::sleep_for(milliseconds(100));
 	int linger = 0;
-	zmq_setsockopt(requester, ZMQ_LINGER, &linger, sizeof(linger));
-	zmq_close(requester);
+	zmq_setsockopt(data->requester, ZMQ_LINGER, &linger, sizeof(linger));
+	zmq_close(data->requester);
 	xlog("Completed all batches.");
 
-  report_progress = false;
-  t1.join();
+	report_progress = false;
+	t1.join();
 
 	return 0;
 }
 
-#if 0
-	while (more_files) {
-		try {
-			Batch batch(file);
-			Chunk = get_chunk();
-			chunk.prioritize();
-			chunk.find_eligible_jobs();
-			chunk.distribute();
-		} catch (std::runtime_error const & e) {
-
-		}
-	}
-#endif
-} // end namespace nitro
+}
+ // end namespace nitro

@@ -28,7 +28,8 @@ protected:
 	virtual int do_run();
 
 private:
-  void * _job_announce_sub;  
+	struct data_t;
+	data_t * data;
 };
 
 } // end namespace nitro

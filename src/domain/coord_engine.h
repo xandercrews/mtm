@@ -1,11 +1,5 @@
-#ifndef _DOMAIN_LEADER_ENGINE_H_
-#define _DOMAIN_LEADER_ENGINE_H_
-
-#include <condition_variable>
-#include <mutex>
-#include <vector>
-
-#include "base/file_lines.h"
+#ifndef _DOMAIN_COORD_ENGINE_H_
+#define _DOMAIN_COORD_ENGINE_H_
 
 #include "domain/engine.h"
 
@@ -33,27 +27,13 @@ public:
 	void enroll_workers(int eid);
 	void enroll_workers_multi(int eid);
 
-	/**
-	 * An engine handle manages the lifetime of an engine instance. When the
-	 * handle goes out of scope, the engine automatically shuts down (cleanly),
-	 * and all resources are released. It goes dark on the network.
-	 *
-	 * handle objects can be passed from one owner to another, like batons.
-	 */
-	typedef std::unique_ptr<coord_engine> handle;
-
 private:
-	std::unique_ptr<file_lines> current_batch_file;
-	stringlist_t hostlist;
-	stringlist_t batches;
-	void * requester;
-	void * _job_annonce_pgm;
-	void * _job_annonce_ipc;
-	stringlist_t _workers;
+	struct data_t;
+	data_t * data;
 
-  void progress_reporter();
-  bool report_progress;
-  int reporter_port;
+	void progress_reporter();
+	bool report_progress;
+	int reporter_port;
 };
 
 } // end namespace nitro

@@ -86,24 +86,3 @@ void coord_listener_thread_main(coord_engine const & coord,
 		fprintf(stderr, "%s\n", e.what());
 	}
 }
-
-#if 0
-TEST(engine_test, complete_batch_lifecycle) {
-	auto coord = make_coord_engine();
-	std::vector<std::string> msgs;
-	// Have to do a little casting here. engine_handle is a handle to the base
-	// class, but we need to pass a ref to the derived class...
-	auto coord_ptr = reinterpret_cast<coord_engine *>(coord.get());
-	std::thread listener(coord_listener_thread_main, std::ref(*coord_ptr),
-			std::ref(msgs));
-	coord->run();
-}
-#else
-
-TEST(engine_test, run_sample_batch) {
-	return;
-	auto coord = make_coord_engine();
-	coord->run();
-	exit(0);
-}
-#endif
