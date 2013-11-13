@@ -55,6 +55,11 @@ public:
 		~notifier();
 	};
 
+	/**
+	 * Should not be called by ordinary users. Public for testing.
+	 */
+	void accept_assignment(assignment * asgn);
+
 protected:
 	virtual int do_run();
 
@@ -67,6 +72,7 @@ private:
 	void respond_to_assignment(void * socket, Json::Value const & json);
 	void start_more_tasks();
 	assignment * get_current_assignment() const;
+
 	friend void zmq_poll_thread_main(worker_engine *);
 };
 

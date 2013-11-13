@@ -22,9 +22,9 @@ void task::set_exit_code(int value) {
 
 char const * get_status_name(task_status x) {
 	switch (x) {
-	case task_status::ts_ready: return "ready";
-	case task_status::ts_active: return "active";
-	case task_status::ts_complete: return "complete";
+	case ts_ready: return "ready";
+	case ts_active: return "active";
+	case ts_complete: return "complete";
 	default: return "unknown";
 	}
 }

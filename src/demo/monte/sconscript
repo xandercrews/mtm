@@ -8,5 +8,14 @@ if platform.uname()[0] != 'Darwin':
 
 prog = env.Program(target='monte', source=Glob('*.cpp'), LIBS=libs)
 
+script = Command("#/build/demo/monte/simulate", "#/src/demo/monte/simulate",
+    'cp $SOURCE $TARGET')
+	
+ui = Command("#/build/demo/monte/ui", "#/src/demo/monte/ui", 
+	'cp -r $SOURCE/* $TARGET/')
+	
+Depends(prog, script) 
+Depends(prog, ui) 
+
 Return('prog')
 

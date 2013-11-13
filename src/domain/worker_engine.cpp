@@ -69,8 +69,8 @@ struct worker_engine::data_t {
 	bool enrolled;
 
 	data_t() :
-			subscriber(0), threadlist(), active_thread_count(0), launcher(0),
-			enrolled(false) {
+			subscriber(0), threadlist(), active_thread_count(0), launcher(0), enrolled(
+					false) {
 	}
 };
 
@@ -79,7 +79,7 @@ worker_engine::notifier::~notifier() {
 }
 
 void worker_engine::notify_thread_complete(thread::id tid) {
-	lock_guard<mutex> lock(data->tlist_mutex);
+	lock_guard < mutex > lock(data->tlist_mutex);
 	threadlist_t & tlist = data->threadlist;
 	for (auto i = tlist.begin(); i != tlist.end(); ++i) {
 		if (i->get_id() == tid) {
@@ -148,11 +148,29 @@ assignment * worker_engine::get_current_assignment() const {
 }
 
 void worker_engine::start_more_tasks() {
+	// TODO: make desired_busy_threads a configurable member.
+	auto desired_busy_threads = MAX_HARDWARE_THREADS;
+	static bool logged_thread_count = false;
+	if (!logged_thread_count) {
+		logged_thread_count = true;
+		xlog("worker_engine will try to keep %1 threads busy.",
+				desired_busy_threads);
+	}
 	auto atc = data->active_thread_count.load();
-	if (atc < MAX_HARDWARE_THREADS) {
+	if (atc < desired_busy_threads) {
 		auto asgn = get_current_assignment();
 		if (asgn) {
-
+			assignment::tasklist_t const & readylist =
+					asgn->get_list_by_status(task_status::ts_ready);
+			for (auto i = readylist.begin(); i != readylist.end(); ++i) {
+				task const & t = **i;
+				asgn->activate_task(t.get_id());
+				lock_guard<mutex> lock(data->tlist_mutex);
+				data->threadlist.push_back(data->launcher(this, t.get_cmdline()));
+				if (++atc == desired_busy_threads) {
+					break;
+				}
+			}
 		}
 	}
 }
@@ -162,21 +180,28 @@ void worker_engine::respond_to_help_request(void * socket) {
 		data->enrolled = true;
 		send_full_msg(socket, serialize_msg(NITRO_AFFIRM_HELP));
 	} else {
-		send_full_msg(socket, serialize_msg(NITRO_DENY_HELP_1REASON, "not yet enrolled"));
+		send_full_msg(socket,
+				serialize_msg(NITRO_DENY_HELP_1REASON, "not yet enrolled"));
 	}
 }
 
-void worker_engine::respond_to_assignment(void * socket, Json::Value const & json) {
+void worker_engine::accept_assignment(assignment * asgn) {
+	lock_guard < mutex > lock(data->alist_mutex);
+	data->assignmentlist.push_back(assignment::handle(asgn));
+}
+
+void worker_engine::respond_to_assignment(void * socket,
+		Json::Value const & json) {
 	string txt;
 	if (data->enrolled) {
 		auto aid = json["body"]["assignment"]["id"];
 		auto lines = json["body"]["assignment"]["lines"];
 		assignment * asgn = new assignment(aid.asCString(), lines.asCString());
-		lock_guard<mutex> lock(data->alist_mutex);
-		data->assignmentlist.push_back(assignment::handle(asgn));
+		accept_assignment(asgn);
 		txt = serialize_msg(NITRO_ACCEPT_ASSIGNMENT);
 	} else {
-		txt = serialize_msg(NITRO_REJECT_ASSIGNMENT_1REASON, "not yet enrolled");
+		txt = serialize_msg(NITRO_REJECT_ASSIGNMENT_1REASON,
+				"not yet enrolled");
 	}
 	send_full_msg(socket, txt);
 }
@@ -233,7 +258,7 @@ int worker_engine::do_run() {
 
 					void * socket = items[i].socket;
 
-					#define IF_SOCKET_N_HANDLE(num, block) \
+#define IF_SOCKET_N_HANDLE(num, block) \
 						if (i == num) { block; } \
 						else { xlog("Can't handle msg on socket %1", num); } break
 
@@ -242,10 +267,11 @@ int worker_engine::do_run() {
 						auto code = json["body"]["code"].asInt();
 						switch (code) {
 						case NITRO_REQUEST_HELP:
-							IF_SOCKET_N_HANDLE(0, respond_to_help_request(socket));
-						case NITRO_HERE_IS_ASSIGNMENT:
+							IF_SOCKET_N_HANDLE(0,
+									respond_to_help_request(socket))
+;							case NITRO_HERE_IS_ASSIGNMENT:
 							IF_SOCKET_N_HANDLE(0, respond_to_assignment(socket, json));
-						default:
+							default:
 							xlog("Unrecognized message %1 (%2)",
 									events::get_std_id_repr(code),
 									events::catalog().get_msg(code));

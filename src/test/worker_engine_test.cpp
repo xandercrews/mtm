@@ -19,14 +19,15 @@ using std::stringstream;
 
 using namespace nitro;
 
-void fake_launch_thread_main(char const * cmdline) {
+void fake_launch_thread_main(worker_engine * we, char const * cmdline) {
+	worker_engine::notifier notifier(*we);
 	mt19937 randomizer;
 	xlog(cmdline);
-	std::this_thread::sleep_for(milliseconds(randomizer() % 100));
+	std::this_thread::sleep_for(milliseconds(randomizer() % 50));
 }
 
-thread fake_launch_func(char const * cmdline) {
-	return thread(fake_launch_thread_main, cmdline);
+thread fake_launch_func(worker_engine * we, char const * cmdline) {
+	return thread(fake_launch_thread_main, we, cmdline);
 }
 
 TEST(worker_engine_test, assignment_mgmt) {
@@ -44,7 +45,8 @@ TEST(worker_engine_test, assignment_mgmt) {
 				(randomizer() % 30) * 10, randomizer());
 		ss << cmd;
 	}
-	assignment asgn("a1", ss.str().c_str());
-
-	//we.run();
+	auto asgn = new assignment("a1", ss.str().c_str());
+	we.accept_assignment(asgn);
+	we.set_launch_func(fake_launch_func);
+	we.run();
 }

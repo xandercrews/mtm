@@ -16,7 +16,8 @@ assignment::assignment(char const * id) :
 		id(id && *id ? id : generate_guid().c_str()) {
 }
 
-assignment::assignment(char const * id, char const * lines) : id(id) {
+assignment::assignment(char const * id, char const * lines) :
+		id(id) {
 	fill_from_lines(lines);
 }
 
@@ -115,7 +116,8 @@ string assignment::get_status_msg() const {
 	generate_guid(guid, sizeof(guid));
 	root["messageId"] = guid;
 	root["senderId"] = "nitro@localhost"; // TODO: fix
-	root["body"]["code"] = events::get_std_id_repr(NITRO_ASSIGNMENT_PROGRESS_REPORT);
+	root["body"]["code"] = events::get_std_id_repr(
+			NITRO_ASSIGNMENT_PROGRESS_REPORT);
 	Json::Value status;
 	int counts[3];
 	Json::Value pending(Json::arrayValue);
@@ -139,5 +141,10 @@ string assignment::get_status_msg() const {
 	return writer.write(root);
 }
 
+assignment::tasklist_t const & assignment::get_list_by_status(
+		task_status ts) const {
+	PRECONDITION(ts >= ts_ready && ts <= ts_complete);
+	return lists[ts];
+}
 
 } // end namespace nitro
