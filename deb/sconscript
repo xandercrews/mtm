@@ -19,6 +19,7 @@ DEBFILES = [
     ('usr/bin/nitro', '#build/nitro/nitro'),
     ('usr/bin/nitro-testrunner', '#build/test/nitro-testrunner'),
     ('usr/bin/fake_worker.py', '#fake_worker.py'),
+    ('usr/bin/monte', '#build/demo/monte/monte'),
 ]
 
 debpkg = '#%s-%s-%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
