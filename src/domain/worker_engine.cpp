@@ -337,10 +337,11 @@ int worker_engine::do_run() {
 						switch (code) {
 						case NITRO_REQUEST_HELP:
 							IF_SOCKET_N_HANDLE(0,
-									respond_to_help_request(socket))
-;							case NITRO_HERE_IS_ASSIGNMENT:
-							IF_SOCKET_N_HANDLE(0, respond_to_assignment(socket, json));
-							default:
+									respond_to_help_request(socket));
+						case NITRO_HERE_IS_ASSIGNMENT:
+							IF_SOCKET_N_HANDLE(0,
+									respond_to_assignment(socket, json));
+						default:
 							xlog("Unrecognized message %1 (%2)",
 									events::get_std_id_repr(code),
 									events::catalog().get_msg(code));

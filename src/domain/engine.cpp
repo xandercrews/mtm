@@ -46,16 +46,16 @@ engine::engine(cmdline const & cmdline) :
 	id = generate_guid();
     _ctx = zmq_ctx_new();
     _publisher = zmq_socket(_ctx, ZMQ_PUB);
-//    _responder = zmq_socket(_ctx, ZMQ_REP);
+    _responder = zmq_socket(_ctx, ZMQ_REP);
     tcp_pub_endpoint = interp("tcp://*:%1", publish_port);
-//    tcp_rep_endpoint = interp("tcp://*:%1", reply_port);
+    tcp_rep_endpoint = interp("tcp://*:%1", reply_port);
     zmq_bind_and_log(_publisher, tcp_pub_endpoint.c_str());
-//    zmq_bind_and_log(_responder, tcp_pub_endpoint.c_str());
+    zmq_bind_and_log(_responder, tcp_pub_endpoint.c_str());
 }
 
 engine::~engine() {
 	zmq_close_now(_publisher);
-//	zmq_close_now(_responder);
+	zmq_close_now(_responder);
 	if (ctx) {
 		zmq_ctx_destroy(ctx);
 	}
@@ -66,7 +66,7 @@ void engine::bind_after_ctor(char const * style) {
 	ipc_pub_endpoint = interp(IPC_PUB_BINDING, pid, style);
 	zmq_bind_and_log(_publisher, ipc_pub_endpoint.c_str());
 	ipc_rep_endpoint = interp(IPC_REP_BINDING, pid, style);
-//	zmq_bind_and_log(_responder, ipc_rep_endpoint.c_str());
+	zmq_bind_and_log(_responder, ipc_rep_endpoint.c_str());
 }
 
 char const * engine::get_id() const {
