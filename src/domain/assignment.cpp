@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include "base/dbc.h"
 #include "base/guid.h"
 
@@ -7,6 +9,7 @@
 #include "json/json.h"
 
 using std::string;
+using std::lock_guard;
 
 using namespace nitro::event_codes;
 
@@ -23,6 +26,11 @@ assignment::assignment(char const * id, char const * lines) :
 
 void assignment::fill_from_lines(char const * lines) {
 	if (lines) {
+		// Technically, it should be unnecessary to lock here, because
+		// this function is only called in a constructor. However, I've
+		// added the lock because I don't want the function to get moved
+		// into a more general callability, only to have thread safety break.
+		lock_guard<std::mutex> lock(mutex);
 		task::id_type n = 0;
 		for (auto p = lines; *p;) {
 			while (isspace(*p)) {
@@ -35,12 +43,12 @@ void assignment::fill_from_lines(char const * lines) {
 			if (!end) {
 				end = strchr(p, 0);
 			}
-			while (end >= p && isspace(*end)) {
+			do {
 				--end;
-			}
+			} while (end >= p && isspace(*end));
 			++end;
 			if (end > p) {
-				ready_task(++n, end);
+				_ready_task(++n, p, end);
 			}
 			p = end;
 		}
@@ -53,6 +61,12 @@ char const * assignment::get_id() const {
 
 task * assignment::ready_task(task::id_type tid, char const * cmdline,
 		char const * end_of_cmdline) {
+	lock_guard<std::mutex> lock(mutex);
+	return _ready_task(tid, cmdline, end_of_cmdline);
+}
+
+task * assignment::_ready_task(task::id_type tid, char const * cmdline,
+		char const * end_of_cmdline) {
 	auto t = task::make(cmdline, end_of_cmdline, this, tid).release();
 	if (t) {
 		lists[task_status::ts_ready].push_back(task::handle(t));
@@ -60,39 +74,55 @@ task * assignment::ready_task(task::id_type tid, char const * cmdline,
 	return t;
 }
 
-void assignment::activate_task(task::id_type tid) {
+char const * assignment::activate_task(task::id_type tid) {
+	lock_guard<std::mutex> lock(mutex);
+	char const * cmdline = nullptr;
 	// Although this loop looks moderately expensive, it should, in practice,
 	// be virtually instantaneous, because we are always going to activate
 	// the first item in the ready list.
-	tasklist_t & alist = lists[task_status::ts_active];
-	tasklist_t & rlist = lists[task_status::ts_ready];
-	for (auto i = rlist.begin(); i != rlist.end(); ++i) {
+	tasklist_t & rlist = lists[ts_ready];
+	for (tasklist_t::iterator i = rlist.begin(); i != rlist.end(); ++i) {
 		task::handle & thandle = *i;
 		if (thandle->get_id() == tid) {
+			cmdline = thandle->get_cmdline();
+			tasklist_t & alist = lists[ts_active];
 			alist.push_back(task::handle(thandle.release()));
 			rlist.erase(i);
-			return;
+			break;
 		}
 	}
+	return cmdline;
 }
 
-void assignment::complete_task(task::id_type tid) {
+bool assignment::complete_task(task::id_type tid) {
+	lock_guard<std::mutex> lock(mutex);
 	// Although this loop looks moderately expensive, it should, in practice,
 	// be cheap, because we are always going to have only a handful of active
 	// items.
-	tasklist_t & alist = lists[task_status::ts_active];
-	tasklist_t & clist = lists[task_status::ts_complete];
-	for (auto i = alist.begin(); i != alist.end(); ++i) {
+	tasklist_t & alist = lists[ts_active];
+	for (tasklist_t::iterator i = alist.begin(); i != alist.end(); ++i) {
 		task::handle & thandle = *i;
 		if (thandle->get_id() == tid) {
+			tasklist_t & clist = lists[ts_complete];
 			clist.push_back(task::handle(thandle.release()));
 			alist.erase(i);
-			return;
+			break;
 		}
 	}
+	return _is_complete();
+}
+
+bool assignment::_is_complete() const {
+	return lists[ts_ready].empty() && lists[ts_active].empty();
+}
+
+bool assignment::is_complete() const {
+	lock_guard<std::mutex> lock(mutex);
+	return _is_complete();
 }
 
 string assignment::get_request_msg() const {
+	lock_guard<std::mutex> lock(mutex);
 	Json::Value root;
 	root["messageId"] = generate_guid();
 	root["senderId"] = "nitro@localhost"; // TODO: fix
@@ -100,7 +130,8 @@ string assignment::get_request_msg() const {
 	body["code"] = events::get_std_id_repr(NITRO_HERE_IS_ASSIGNMENT);
 	Json::Value tasks;
 	tasklist_t const & rlist = lists[task_status::ts_ready];
-	for (auto i = rlist.cbegin(); i != rlist.cend(); ++i) {
+	for (tasklist_t::const_iterator i = rlist.cbegin(); i != rlist.cend();
+			++i) {
 		auto key = interp("%1", (*i)->get_id());
 		tasks[key] = (*i)->get_cmdline();
 	}
@@ -111,6 +142,7 @@ string assignment::get_request_msg() const {
 }
 
 string assignment::get_status_msg() const {
+	lock_guard<std::mutex> lock(mutex);
 	Json::Value root;
 	char guid[GUID_BUF_LEN];
 	generate_guid(guid, sizeof(guid));
@@ -127,7 +159,8 @@ string assignment::get_status_msg() const {
 		counts[stat] = 0;
 		Json::Value items(Json::arrayValue);
 		tasklist_t const & tlist = lists[stat];
-		for (auto i = tlist.cbegin(); i != tlist.cend(); ++i) {
+		for (tasklist_t::const_iterator i = tlist.cbegin(); i != tlist.cend();
+				++i) {
 			auto idstr = interp("%1", (*i)->get_id());
 			items[counts[stat]++] = idstr;
 		}

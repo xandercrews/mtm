@@ -1,10 +1,9 @@
 #include <atomic>
-#include <condition_variable>
-#include <thread>
-#include <mutex>
-#include <map>
-#include <list>
 #include <chrono>
+#include <list>
+#include <map>
+#include <mutex>
+#include <thread>
 
 #include <string.h>
 
@@ -38,8 +37,8 @@ using namespace nitro::event_codes;
 
 namespace nitro {
 
-void default_thread_main(worker_engine * we, char const * cmdline) {
-	worker_engine::notifier notifier(*we);
+void default_thread_main(worker_engine & we, char const * cmdline) {
+	worker_engine::notifier notifier(we);
 	FILE * f = popen(cmdline, "r");
 	if (f) {
 		char buf[1024];
@@ -50,27 +49,54 @@ void default_thread_main(worker_engine * we, char const * cmdline) {
 	}
 }
 
-thread default_launch_func(worker_engine * we, char const * cmdline) {
-	return thread(default_thread_main, we, cmdline);
+thread * default_launch_func(worker_engine & we, char const * cmdline) {
+	return new thread(default_thread_main, std::ref(we), cmdline);
 }
 
-typedef std::list<thread> threadlist_t;
-typedef std::list<assignment::handle> assignmentlist_t;
+struct thread_task_pair {
+	mutable thread * associated_thread;
+	task const * associated_task;
+	thread_task_pair(thread * th, task const * taskref) :
+			associated_thread(th), associated_task(taskref) {
+	}
+	~thread_task_pair() {
+		delete associated_thread;
+	}
+	// Implement move semantics, so that if you assign or copy construct one
+	// of these from another, state is transferred and the old one becomes a
+	// shell with no responsibilities.
+	thread_task_pair(thread_task_pair const & other) :
+			associated_thread(nullptr) {
+		this->operator =(other);
+	}
+	thread_task_pair & operator =(thread_task_pair const & rhs) {
+		if (associated_thread) {
+			delete associated_thread;
+		}
+		associated_thread = rhs.associated_thread;
+		associated_task = rhs.associated_task;
+		rhs.associated_thread = nullptr;
+		return *this;
+	}
+};
+
+typedef std::map<thread::id, thread_task_pair> threadmap_t;
+typedef std::queue<assignment::handle> asgn_queue_t;
 
 struct worker_engine::data_t {
 	void * subscriber;
-	threadlist_t threadlist;
-	mutex tlist_mutex;
+	threadmap_t threadmap;
+	mutex tmap_mutex;
 	atomic<uint> active_thread_count;
-	assignmentlist_t assignmentlist;
-	mutex alist_mutex;
+	asgn_queue_t asgn_queue;
+	mutex aqueue_mutex;
 	string workfor;
 	launch_func launcher;
 	bool enrolled;
 
 	data_t() :
-			subscriber(0), threadlist(), active_thread_count(0), launcher(0), enrolled(
-					false) {
+			subscriber(0), threadmap(), active_thread_count(0), launcher(0),
+			enrolled(false) {
 	}
 };
 
@@ -79,14 +105,37 @@ worker_engine::notifier::~notifier() {
 }
 
 void worker_engine::notify_thread_complete(thread::id tid) {
-	lock_guard < mutex > lock(data->tlist_mutex);
-	threadlist_t & tlist = data->threadlist;
-	for (auto i = tlist.begin(); i != tlist.end(); ++i) {
-		if (i->get_id() == tid) {
-			tlist.erase(i);
-			data->active_thread_count--;
-			return;
+	task::id_type task_id_to_complete = UINT64_MAX;
+	{
+		lock_guard<mutex> lock(data->tmap_mutex);
+		auto i = data->threadmap.find(tid);
+		if (i != data->threadmap.end()) {
+			// Have to detach before we erase; otherwise we trigger a terminate
+			// in thread dtor, which recursively calls this method...
+			i->second.associated_thread->detach();
+			task_id_to_complete = i->second.associated_task->get_id();
+			// This causes the thread object to be destroyed, among other
+			// things.
+			data->threadmap.erase(i);
 		}
+	} // release lock on threadmap
+	if (task_id_to_complete != UINT64_MAX) {
+		--data->active_thread_count;
+		auto asgn = get_current_assignment();
+		if (asgn) {
+			bool all_complete = asgn->complete_task(task_id_to_complete);
+			if (all_complete) {
+				auto msg = serialize_msg(NITRO_1ASSIGNMENT_COMPLETE,
+						asgn->get_id());
+				queue_for_send(publisher, msg);
+				lock_guard<mutex> lock(data->aqueue_mutex);
+				data->asgn_queue.pop();
+			}
+		} else {
+			xlog("Got thread exit without current assignment. Huh?");
+		}
+	} else {
+		xlog("Didn't find thread in map.");
 	}
 }
 
@@ -99,7 +148,7 @@ worker_engine::worker_engine(cmdline const & cmdline) :
 		data->subscriber = subscriber;
 		zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, COORDINATION_TOPIC,
 				strlen(COORDINATION_TOPIC));
-		bind_publisher_to_ipc("wpub");
+		bind_after_ctor("w");
 
 		auto wf = cmdline.get_option("--workfor", "");
 		auto proto = strstr(wf, "://");
@@ -144,7 +193,7 @@ void worker_engine::set_launch_func(launch_func value) {
 }
 
 assignment * worker_engine::get_current_assignment() const {
-	return data->assignmentlist.empty() ? 0 : data->assignmentlist.front().get();
+	return data->asgn_queue.empty() ? 0 : data->asgn_queue.front().get();
 }
 
 void worker_engine::start_more_tasks() {
@@ -160,16 +209,25 @@ void worker_engine::start_more_tasks() {
 	if (atc < desired_busy_threads) {
 		auto asgn = get_current_assignment();
 		if (asgn) {
-			assignment::tasklist_t const & readylist =
-					asgn->get_list_by_status(task_status::ts_ready);
-			for (auto i = readylist.begin(); i != readylist.end(); ++i) {
+			assignment::tasklist_t const & readylist = asgn->get_list_by_status(
+					task_status::ts_ready);
+			std::list<task const *> to_start;
+			for (auto i = readylist.cbegin(); i != readylist.cend(); ++i) {
 				task const & t = **i;
-				asgn->activate_task(t.get_id());
-				lock_guard<mutex> lock(data->tlist_mutex);
-				data->threadlist.push_back(data->launcher(this, t.get_cmdline()));
+				to_start.push_back(&t);
 				if (++atc == desired_busy_threads) {
 					break;
 				}
+			}
+			if (!to_start.empty()) {
+				lock_guard<mutex> lock(data->tmap_mutex);
+				for (auto i : to_start) {
+					auto cmdline = asgn->activate_task(i->get_id());
+					thread * launched = data->launcher(*this, cmdline);
+					thread_task_pair ttpair(launched, i);
+					data->threadmap.insert( { launched->get_id(), ttpair });
+				}
+				data->active_thread_count += to_start.size();
 			}
 		}
 	}
@@ -186,8 +244,14 @@ void worker_engine::respond_to_help_request(void * socket) {
 }
 
 void worker_engine::accept_assignment(assignment * asgn) {
-	lock_guard < mutex > lock(data->alist_mutex);
-	data->assignmentlist.push_back(assignment::handle(asgn));
+	lock_guard<mutex> lock(data->aqueue_mutex);
+	data->asgn_queue.push(assignment::handle(asgn));
+	// Normally, we say we're enrolled when we receive a message requesting
+	// help, and we affirm that we're available. But in testing, we may
+	// directly call this method without sending a message. In all cases,
+	// we must be enrolled by the time we accept an assignment, so this is a
+	// useful failsafe.
+	data->enrolled = true;
 }
 
 void worker_engine::respond_to_assignment(void * socket,
@@ -210,7 +274,7 @@ void worker_engine::report_status() {
 	auto asgn = get_current_assignment();
 	if (asgn) {
 		auto txt = asgn->get_status_msg();
-		send_full_msg(publisher, txt);
+		queue_for_send(publisher, txt);
 	} else {
 		// TODO: REPORT IDLE
 	}
@@ -219,17 +283,17 @@ void worker_engine::report_status() {
 int worker_engine::do_run() {
 
 	const int ITEM_COUNT = 2;
-	zmq_pollitem_t items[ITEM_COUNT];
-	items[0].socket = responder;
-	items[0].events = ZMQ_POLLIN;
-	items[1].socket = data->subscriber;
-	items[1].events = ZMQ_POLLIN;
 
 	const auto REPORTING_INTERVAL = milliseconds(5000);
 	high_resolution_clock clock;
 	auto last_status_report = clock.now() - REPORTING_INTERVAL;
 
 	while (true) {
+
+		// Don't keep looping if we've completed our work.
+		if (data->enrolled && !get_linger() && !get_current_assignment()) {
+			break;
+		}
 
 		start_more_tasks();
 
@@ -239,11 +303,16 @@ int worker_engine::do_run() {
 			last_status_report = clock.now();
 		}
 
-		int rc = zmq_poll(items, 1, 25);
-		if (rc) {
+		int delay = 25;
+		while (true) {
 
-			// Process all messages that have accumulated.
-			while (true) {
+			zmq_pollitem_t items[] = { { responder, 0, ZMQ_POLLIN, 0 }, {
+					data->subscriber, 0, ZMQ_POLLIN, 0 }, };
+
+			int rc = zmq_poll(items, ITEM_COUNT, delay);
+			if (rc < 1) {
+				break;
+			} else {
 
 				for (int i = 0; i < ITEM_COUNT; ++i) {
 
@@ -258,7 +327,7 @@ int worker_engine::do_run() {
 
 					void * socket = items[i].socket;
 
-#define IF_SOCKET_N_HANDLE(num, block) \
+					#define IF_SOCKET_N_HANDLE(num, block) \
 						if (i == num) { block; } \
 						else { xlog("Can't handle msg on socket %1", num); } break
 
@@ -278,14 +347,14 @@ int worker_engine::do_run() {
 						}
 					}
 				}
-				// See if there are other messages that need processing
-				// before we go back to sleep.
-				rc = zmq_poll(items, ITEM_COUNT, 0);
-				if (rc == 0) {
-					break;
-				}
+				// On subsequent times through the loop, don't wait; only
+				// continue looping as long as we have a backlog of messages.
+				delay = 0;
 			}
 		}
+
+		// Dispatch any messages that we've decided to send.
+		send_queued();
 	}
 
 	return 0;

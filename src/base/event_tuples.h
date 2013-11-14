@@ -126,4 +126,10 @@ EVENT(E_1FILE_BAD_SEEMS_BINARY, error, user, 16,
 		" line-by-line.",
 		"")
 
+EVENT(I_1APP_STARTING, info, user, 17,
+		"domain.base.housekeeping",
+		"Input file %1{fname} seems to be binary; it cannot be processed"
+		" line-by-line.",
+		"")
+
 #undef EVENT

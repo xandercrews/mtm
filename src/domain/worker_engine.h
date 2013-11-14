@@ -37,7 +37,7 @@ public:
 	 */
 	const char * get_workfor() const;
 
-	typedef std::thread (*launch_func)(worker_engine *, char const * cmdline);
+	typedef std::thread * (*launch_func)(worker_engine &, char const * cmdline);
 	launch_func get_launch_func() const;
 	/**
 	 * Allow launch behaviors to be simulated.

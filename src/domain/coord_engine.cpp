@@ -47,7 +47,7 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 
 	init_hosts(cmdline);
 
-	bind_publisher_to_ipc("cpub");
+	bind_after_ctor("c");
 
 	// bind socket for remote connections
 	auto iface = cmdline.get_option("--interface", DEFAULT_MULTICAST_INTERFACE);

@@ -2,15 +2,20 @@
 #define _NITRO_DOMAIN_ENGINE_H_
 
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <string>
+#include <utility>
 
 namespace zmq {
-class context_t;
+	class context_t;
 }
 
 namespace nitro {
 
-const char * const IPC_PUB_BINDING = "inproc://nitro-%1{pid}-%2{style}";
+const char * const IPC_PUB_BINDING = "ipc:///tmp/nitro-%1{pid}-%2{style}pub";
+const char * const IPC_REP_BINDING = "ipc:///tmp/nitro-%1{pid}-%2{style}rep";
+
 extern const unsigned MAX_HARDWARE_THREADS;
 
 class cmdline;
@@ -59,6 +64,11 @@ public:
 	int get_reply_port() const;
 
 	/**
+	 * Should the engine wait for a terminate message before exiting?
+	 */
+	bool get_linger() const;
+
+	/**
 	 * What port do we use to initiate new conversations with others?
 	 *
 	 * In manager mode, we use this port to proactively communicate with our
@@ -97,8 +107,11 @@ protected:
 	void * const & responder;
 	void * const & publisher;
 
-	// Derived classes should call this at the end of their constructor.
-	void bind_publisher_to_ipc(char const * style);
+	// Derived classes should call this at the end of their constructor. We
+	// can't bind completely until we know what style of engine we are.
+	void bind_after_ctor(char const * style);
+	void queue_for_send(void * socket, std::string const & msg);
+	void send_queued();
 
 private:
 	int reply_port;
@@ -109,6 +122,12 @@ private:
 	std::string id;
 	std::string ipc_pub_endpoint;
 	std::string tcp_pub_endpoint;
+	std::string ipc_rep_endpoint;
+	std::string tcp_rep_endpoint;
+	typedef std::pair<void *, std::string> qmsg_t;
+	std::queue<qmsg_t> send_queue;
+	std::mutex send_queue_mutex;
+	bool linger;
 };
 
 /**

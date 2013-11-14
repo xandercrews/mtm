@@ -11,10 +11,14 @@
 #include "domain/coord_engine.h"
 #include "domain/engine.h"
 #include "domain/event_codes.h"
+#include "domain/msg.h"
 #include "domain/worker_engine.h"
 #include "domain/zmq_helpers.h"
 
 #include "zeromq/include/zmq.hpp"
+
+using std::mutex;
+using std::lock_guard;
 
 namespace nitro {
 
@@ -27,36 +31,64 @@ const unsigned MAX_HARDWARE_THREADS = std::max(4u, std::thread::hardware_concurr
 engine::engine(cmdline const & cmdline) :
 		ctx(_ctx), responder(_responder), publisher(_publisher),
 		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
-		id(), ipc_pub_endpoint(), tcp_pub_endpoint() {
+		id(), ipc_pub_endpoint(), tcp_pub_endpoint(),
+		ipc_rep_endpoint(), tcp_rep_endpoint(), linger(false) {
 
 	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_REPLY_PORT);
 	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_PUBLISH_PORT);
 	PRECONDITION(reply_port > 1024 && reply_port < 65536);
 	PRECONDITION(publish_port > 1024 && publish_port < 65536);
 	PRECONDITION(reply_port != publish_port);
+	if (cmdline.has_flag("--linger")) {
+		linger = true;
+	}
 
 	id = generate_guid();
     _ctx = zmq_ctx_new();
     _publisher = zmq_socket(_ctx, ZMQ_PUB);
+//    _responder = zmq_socket(_ctx, ZMQ_REP);
     tcp_pub_endpoint = interp("tcp://*:%1", publish_port);
+//    tcp_rep_endpoint = interp("tcp://*:%1", reply_port);
     zmq_bind_and_log(_publisher, tcp_pub_endpoint.c_str());
+//    zmq_bind_and_log(_responder, tcp_pub_endpoint.c_str());
 }
 
 engine::~engine() {
 	zmq_close_now(_publisher);
-	zmq_close_now(_responder);
+//	zmq_close_now(_responder);
 	if (ctx) {
 		zmq_ctx_destroy(ctx);
 	}
 }
 
-void engine::bind_publisher_to_ipc(char const * style) {
-	ipc_pub_endpoint = interp(IPC_PUB_BINDING, getpid(), style);
+void engine::bind_after_ctor(char const * style) {
+	auto pid = getpid();
+	ipc_pub_endpoint = interp(IPC_PUB_BINDING, pid, style);
 	zmq_bind_and_log(_publisher, ipc_pub_endpoint.c_str());
+	ipc_rep_endpoint = interp(IPC_REP_BINDING, pid, style);
+//	zmq_bind_and_log(_responder, ipc_rep_endpoint.c_str());
 }
 
 char const * engine::get_id() const {
 	return id.c_str();
+}
+
+bool engine::get_linger() const {
+	return linger;
+}
+
+void engine::queue_for_send(void * socket, std::string const & msg) {
+	lock_guard<mutex> lock(send_queue_mutex);
+	send_queue.push({socket, msg});
+}
+
+void engine::send_queued() {
+	lock_guard<mutex> lock(send_queue_mutex);
+	while (!send_queue.empty()) {
+		auto item = send_queue.front();
+		send_full_msg(item.first, item.second);
+		send_queue.pop();
+	}
 }
 
 char const * engine::get_subscribe_endpoint(char const * transport) const {

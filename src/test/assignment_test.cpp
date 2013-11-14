@@ -51,5 +51,16 @@ TEST(assignment_test, get_status_msg) {
 	expect_str_contains(txt, "active\" : [ \"1\" ]");
 	expect_str_contains(txt, "complete_count\" : 1");
 	expect_str_contains(txt, "complete\" : [ \"2\" ]");
+}
 
+TEST(assignment_test, fill_from_lines) {
+	assignment asgn("a1", "qsub line 1\nqsub line 2\nqsub line 3");
+	assignment::tasklist_t const & readylist = asgn.get_list_by_status(
+			ts_ready);
+	EXPECT_EQ(3, readylist.size());
+	for (auto i = readylist.cbegin(); i != readylist.cend(); ++i) {
+		auto cmd = (*i)->get_cmdline();
+		expect_str_contains(cmd, "qsub line ");
+		EXPECT_TRUE(strchr(cmd, '\n') == 0);
+	}
 }

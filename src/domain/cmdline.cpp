@@ -31,7 +31,7 @@ char const * cmdline::get_valid_flags() const {
  */
 char const * cmdline::get_valid_options() const {
 	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e"
-			"|--interface|-i|--reportport";
+			"|--interface|-i|--linger|-l";
 }
 
 char const * cmdline::get_default_program_name() const {
@@ -87,6 +87,7 @@ std::string cmdline::get_help() const {
 		"\n"
 		"    Flags:\n"
 		"      --help or -h         -- Display this screen.\n"
+		"      --linger or -l       -- Wait for terminate message before exiting.\n"
 		"\n"
 		"    Options:\n"
 		"      --workfor or -w      -- Take work from coordinator on specified host.\n"
@@ -94,10 +95,9 @@ std::string cmdline::get_help() const {
 		"      --replyport or -r    -- Listen on this port (%3{defrport} is default).\n"
 		"      --publishport or -p  -- Talk on this port (%4{defpport} is default).\n"
         "      --interface or -i    -- NIC for multicast messages (%5{iface} is default).\n"
-        "      --reportport         -- Report progress on this port (%6{defrport2} is default).\n"
 		"\n",
 		e, get_program_name(), DEFAULT_REPLY_PORT, DEFAULT_PUBLISH_PORT,
-		DEFAULT_MULTICAST_INTERFACE, DEFAULT_REPORTER_PORT
+		DEFAULT_MULTICAST_INTERFACE
 		);
 }
 

@@ -66,37 +66,42 @@ EVENT(NITRO_ASSIGNMENT_PROGRESS_REPORT, info, internal, 105,
 		"Here is information about how much I've done on my assignment.",
 		"")
 
-EVENT(NITRO_BATCH_PROGRESS_REPORT, info, internal, 106,
+EVENT(NITRO_1ASSIGNMENT_COMPLETE, info, internal, 106,
+		"domain.nitro.status",
+		"Assignment \"%1\" is complete.",
+		"")
+
+EVENT(NITRO_BATCH_PROGRESS_REPORT, info, internal, 107,
 		"domain.nitro.status",
 		"Here is information about how much I've done on my batch.",
 		"")
 
-EVENT(NITRO_BATCH_SUBMITTED, info, internal, 107,
+EVENT(NITRO_BATCH_SUBMITTED, info, internal, 108,
 		"domain.nitro.coordinate",
 		"Here is a new batch to work on.",
 		"")
 
-EVENT(NITRO_TERMINATE_REQUEST, info, internal, 108,
+EVENT(NITRO_TERMINATE_REQUEST, info, internal, 109,
 		"domain.nitro.internal",
 		"Please stop all work and exit.",
 		"")
 
-EVENT(NITRO_PING_REQUEST, info, internal, 109,
+EVENT(NITRO_PING_REQUEST, info, internal, 110,
 		"domain.nitro.coordinate",
 		"Please respond if you're alive.",
 		"")
 
-EVENT(NITRO_PING_RESPONSE, info, internal, 110,
+EVENT(NITRO_PING_RESPONSE, info, internal, 111,
 		"domain.nitro.coordinate",
 		"I am alive, and I've responded as you asked.",
 		"")
 
-EVENT(NITRO_ACCEPT_ASSIGNMENT, info, internal, 111,
+EVENT(NITRO_ACCEPT_ASSIGNMENT, info, internal, 112,
 		"domain.nitro.coordinate",
 		"Assignment accepted.",
 		"")
 
-EVENT(NITRO_REJECT_ASSIGNMENT_1REASON, info, internal, 112,
+EVENT(NITRO_REJECT_ASSIGNMENT_1REASON, info, internal, 113,
 		"domain.nitro.coordinate",
 		"Assignment rejected. Reason: %1.",
 		"")
