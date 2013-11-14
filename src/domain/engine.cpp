@@ -5,6 +5,7 @@
 #include "base/event_codes.h"
 #include "base/guid.h"
 #include "base/interp.h"
+#include "base/netutil.h"
 #include "base/xlog.h"
 
 #include "domain/cmdline.h"
@@ -52,13 +53,26 @@ engine::engine(cmdline const & cmdline) :
     sockets[ep_reqrep] = zmq_socket(_ctx, ZMQ_REP);
 
     // Figure out what tcp endpoints we're going to be using.
-    endpoints[ep_pubsub][et_tcp] = interp(TCP_BIND_ENDPOINT_PATTERN, pubsub_port);
-    endpoints[ep_reqrep][et_tcp] = interp(TCP_BIND_ENDPOINT_PATTERN, reqrep_port);
+    auto t1 = interp(TCP_BIND_ENDPOINT_PATTERN, pubsub_port);
+    auto t2 = interp(TCP_BIND_ENDPOINT_PATTERN, reqrep_port);
+    char const * firstaddr = nullptr;
+    for (int i = 0; ; ++i) {
+    	auto x = get_local_ipaddr(i);
+    	if (x == nullptr) {
+    		break;
+    	}
+    	if (firstaddr == nullptr || strcmp(firstaddr, "127.0.0.1") == 0) {
+    		firstaddr = x;
+    	}
+    }
+    endpoints[ep_pubsub][et_tcp] = interp(TCP_CONNECT_ENDPOINT_PATTERN,
+    		firstaddr, pubsub_port);
+    endpoints[ep_reqrep][et_tcp] = interp(TCP_CONNECT_ENDPOINT_PATTERN,
+    		firstaddr, reqrep_port);
 
     // Bind to tcp.
-    for (int pat = ep_pubsub; pat <= ep_reqrep; ++pat) {
-    	zmq_bind_and_log(sockets[pat], endpoints[pat][et_tcp].c_str());
-    }
+   	zmq_bind_and_log(publisher, t1.c_str());
+   	zmq_bind_and_log(responder, t2.c_str());
 }
 
 engine::~engine() {

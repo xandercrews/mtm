@@ -1,3 +1,5 @@
+
+
 #include "base/error.h"
 #include "base/xlog.h"
 
@@ -28,3 +30,4 @@ int zmq_connect_and_log(void * socket, char const * endpoint) {
 	xlog("connect %1 returned %2", endpoint, ERR_IF_APPLICABLE);
 	return rc;
 }
+

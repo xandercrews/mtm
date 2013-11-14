@@ -202,7 +202,7 @@ void coord_engine::distribute(assignment_t & asgn) {
 	auto host = data->hostlist.begin();
 	for (auto cmd : *asgn) {
 		auto endpoint = interp("tcp://%1", *host);
-		void * requester;
+		void * requester = 0;
 		try {
 			requester = zmq_socket(ctx, ZMQ_REQ);
 			int rc;

@@ -18,6 +18,7 @@ const char * const IPC_REQREP_ENDPOINT_PATTERN = "ipc:///tmp/nitro-%1{pid}-%2{st
 const char * const INPROC_PUBSUB_ENDPOINT_PATTERN = "inproc://%1{style}pubsub";
 const char * const INPROC_REQREP_ENDPOINT_PATTERN = "inproc://%1{style}reqrep";
 const char * const TCP_BIND_ENDPOINT_PATTERN = "tcp://*:%1";
+const char * const TCP_CONNECT_ENDPOINT_PATTERN = "tcp://%1:%2";
 
 extern const unsigned MAX_HARDWARE_THREADS;
 

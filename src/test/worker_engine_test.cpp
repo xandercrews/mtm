@@ -142,8 +142,8 @@ TEST_P(worker_engine_test, assignment_mgmt) {
 	xlog("should be finishing now");
 }
 
-// Run the engine test with both the ipc and inproc protocols, to guarantee
-// that it works for both.
+// Run the engine test with multiple transports, to guarantee that it works for
+// all of them.
 INSTANTIATE_TEST_CASE_P(variant, worker_engine_test,
-		::testing::Values(et_ipc, et_inproc));
+		::testing::Values(et_ipc, et_inproc, et_tcp));
 
