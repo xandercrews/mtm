@@ -48,7 +48,8 @@ thread * fake_launch_func(worker_engine & we, char const * cmdline) {
 	return new thread(fake_launch_thread_main, std::ref(we), cmdline);
 }
 
-void listener_thread_main(worker_engine & we, map<int, int> & msg_counts) {
+void listener_thread_main(worker_engine & we, map<int, int> & msg_counts,
+		endpoint_transport transport) {
 
 	high_resolution_clock clock;
 	auto start = clock.now();
@@ -59,7 +60,7 @@ void listener_thread_main(worker_engine & we, map<int, int> & msg_counts) {
 	if (rc) {
 		xlog(ERROR_EVENT(errno).what());
 	}
-	auto endpoint = we.get_endpoint(ep_pubsub, et_ipc);
+	auto endpoint = we.get_endpoint(ep_pubsub, transport);
 	zmq_connect_and_log(subscriber, endpoint);
 
 	while (true) {
@@ -89,7 +90,16 @@ void listener_thread_main(worker_engine & we, map<int, int> & msg_counts) {
 	}
 }
 
-TEST(worker_engine_test, assignment_mgmt) {
+class worker_engine_test : public ::testing::TestWithParam<endpoint_transport> {
+	// You can implement all the usual fixture class members here.
+	// To access the test parameter, call GetParam() from class
+	// TestWithParam<T>.
+};
+
+TEST_P(worker_engine_test, assignment_mgmt) {
+
+	thread_launch_count.store(0);
+	thread_exit_count.store(0);
 
 	char const * wargs[] = { "nitro", "--rrport", "36123", "--workfor",
 			"127.0.0.1:36124" };
@@ -118,7 +128,8 @@ TEST(worker_engine_test, assignment_mgmt) {
 
 	// Launch listener thread so we can notice what happens while engine runs.
 	map<int, int> counts;
-	thread listener(listener_thread_main, std::ref(we), std::ref(counts));
+	thread listener(listener_thread_main, std::ref(we), std::ref(counts),
+			GetParam());
 
 	// Run engine. Prove that all tasks were launched.
 	thread_launch_count.store(0);
@@ -130,4 +141,9 @@ TEST(worker_engine_test, assignment_mgmt) {
 
 	xlog("should be finishing now");
 }
+
+// Run the engine test with both the ipc and inproc protocols, to guarantee
+// that it works for both.
+INSTANTIATE_TEST_CASE_P(variant, worker_engine_test,
+		::testing::Values(et_ipc, et_inproc));
 
