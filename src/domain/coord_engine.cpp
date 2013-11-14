@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <map>
 #include <mutex>
+#include <queue>
 #include <vector>
 #include <thread>
 
@@ -9,6 +10,7 @@
 
 #include "base/dbc.h"
 #include "base/file_lines.h"
+#include "base/guid.h"
 #include "base/strutil.h"
 #include "base/xlog.h"
 
@@ -27,7 +29,9 @@ using std::chrono::milliseconds;
 using std::lock_guard;
 using std::map;
 using std::mutex;
+using std::queue;
 using std::string;
+using std::thread;
 
 using namespace nitro::event_codes;
 
@@ -41,7 +45,7 @@ struct coord_engine::data_t {
 	stringlist_t hostlist;
 	asgn_map_t assignments;
 	mutex asgn_mutex;
-	stringlist_t batches;
+	queue<string> batches;
 	void * requester;
 	stringlist_t workers;
 	bool simulate_workers;
@@ -55,8 +59,11 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 		engine(cmdline), data(new data_t) {
 
 	init_hosts(cmdline);
-
 	bind_after_ctor("c");
+	auto batches = cmdline.get_positional_args();
+	for (auto batch: batches) {
+		data->batches.push(batch);
+	}
 
 #if 0
 	// bind socket for remote connections
@@ -197,7 +204,7 @@ coord_engine::assignment_t coord_engine::next_assignment() {
 			} else {
 				auto fl = new file_lines(data->batches.front().c_str());
 				data->current_batch_file = std::unique_ptr < file_lines > (fl);
-				data->batches.erase(data->batches.begin());
+				data->batches.pop();
 			}
 		}
 		while (true) {
@@ -285,8 +292,86 @@ void coord_engine::progress_reporter() {
 	xlog("Before report thread exit");
 }
 
+void sim_thread_main(assignment * asgn, mutex * mtx, unsigned * count_completed,
+		unsigned * busy_count, unsigned nodenum, unsigned delay, unsigned acount) {
+	{
+		lock_guard<mutex> lock(*mtx);
+		xlog("Assignment %1 given to nitro%2", acount, nodenum);
+		++busy_count;
+	}
+	std::this_thread::sleep_for(milliseconds(delay));
+	{
+		lock_guard<mutex> lock(*mtx);
+		xlog("Assignment %1 complete.", acount);
+		*count_completed += asgn->get_counts();
+		--busy_count;
+	}
+}
+
 int coord_engine::do_run() {
 
+#define SIMULATE 1
+#if SIMULATE
+
+	if (data->batches.empty()) {
+		xlog("No batch files specified on command line.");
+	}
+
+	for (auto x: data->hostlist) {
+		xlog("Enrolling %1... done.", x);
+	}
+
+	mutex out_mutex;
+	static unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+	std::mt19937 randomizer(seed);
+	unsigned acount = 0;
+
+	while (!data->batches.empty()) {
+		auto path = data->batches.front().c_str();
+		xlog("Opening batch file \"%1\"...", path);
+		file_lines fl(path);
+		data->batches.pop();
+
+		unsigned completed_count_in_batch = 0;
+		bool more_lines = true;
+		while (more_lines) {
+			unsigned busy_count = 0;
+			for (int i = 0; i < 4; ++i) {
+				assignment * asgn = new assignment(generate_guid().c_str());
+				for (int i = 0; i < 100; ++i) {
+					auto line = fl.next();
+					if (!line) {
+						more_lines = false;
+						break;
+					}
+					asgn->ready_task(fl.get_current_line_num(), line);
+				}
+				if (!asgn->is_complete()) {
+					thread nxt(sim_thread_main, asgn, &out_mutex,
+							&completed_count_in_batch, &busy_count,
+							1 + (randomizer() % 100),
+							50 + (randomizer() % 60), ++acount);
+					std::this_thread::sleep_for(milliseconds(50));
+					nxt.detach();
+				}
+			}
+			std::this_thread::sleep_for(milliseconds(200));
+			// Make sure all threads have exited before we continue.
+			do {
+				{
+					lock_guard<mutex> lock(mutex);
+					if (busy_count == 0) {
+						break;
+					}
+				}
+				std::this_thread::sleep_for(milliseconds(25));
+			} while (true);
+		}
+		xlog("Batch complete.\n");
+	}
+
+
+#else
 	report_progress = true;
 	std::thread t1(&coord_engine::progress_reporter, this);
 
@@ -317,6 +402,7 @@ int coord_engine::do_run() {
 
 	report_progress = false;
 	t1.join();
+#endif
 
 	return 0;
 }
@@ -342,11 +428,6 @@ void coord_engine::init_hosts(cmdline const & cmdline) {
 #endif
 
 			}
-			auto pargs = cmdline.get_positional_args();
-			for (auto batch : pargs) {
-				data->batches.push_back(batch);
-			}
-			return;
 		} catch (error_event const & e) {
 			// Must not be a file. Try raw list.
 #if 0

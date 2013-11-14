@@ -41,8 +41,11 @@ public:
 	/**
 	 * Count how many tasks are in each state. NULL can be passed for any
 	 * parameters that are uninteresting.
+	 *
+	 * @return total count
 	 */
-	void get_counts(int * ready, int * active, int * complete, int * total);
+	unsigned get_counts(unsigned * complete=nullptr,
+			unsigned * active = nullptr, unsigned * ready=nullptr);
 
 	/**
 	 * Return a json string suitable for transmitting to a worker to request

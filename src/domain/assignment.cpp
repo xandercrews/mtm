@@ -121,16 +121,15 @@ bool assignment::is_complete() const {
 	return _is_complete();
 }
 
-void assignment::get_counts(int * ready, int * active, int * complete,
-		int * total) {
+unsigned assignment::get_counts(unsigned * complete, unsigned * active,
+		unsigned * ready) {
 	lock_guard<std::mutex> lock(mutex);
-	#define READ_AND_SET(x) int _##x = lists[ts_##x].size(); if (x) *x = _##x
+	#define READ_AND_SET(x) unsigned _##x = lists[ts_##x].size(); if (x) *x = _##x
 	READ_AND_SET(ready);
 	READ_AND_SET(active);
 	READ_AND_SET(complete);
 	#undef READ_AND_SET
-	int _total = _ready + _active + _complete;
-	if (total) *total = _total;
+	return _ready + _active + _complete;
 }
 
 string assignment::get_request_msg() const {
