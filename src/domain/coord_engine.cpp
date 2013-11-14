@@ -49,12 +49,14 @@ coord_engine::coord_engine(cmdline const & cmdline) :
 
 	bind_after_ctor("c");
 
+#if 0
 	// bind socket for remote connections
 	auto iface = cmdline.get_option("--interface", DEFAULT_MULTICAST_INTERFACE);
 	// TODO: figure out what value to use for ip addr on next line...
 	auto endpoint = interp("epgm://%1;239.192.1.1:%2", iface,
 			get_publish_port());
 	zmq_bind_and_log(publisher, endpoint.c_str());
+#endif
 
 	reporter_port = cmdline.get_option_as_int("--reporter",
 			DEFAULT_REPORTER_PORT);

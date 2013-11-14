@@ -9,7 +9,6 @@
 
 #include "domain/assignment.h"
 #include "domain/cmdline.h"
-#include "domain/coord_engine.h"
 #include "domain/event_codes.h"
 #include "domain/msg.h"
 #include "domain/worker_engine.h"
@@ -60,7 +59,7 @@ void listener_thread_main(worker_engine & we, map<int, int> & msg_counts) {
 	if (rc) {
 		xlog(ERROR_EVENT(errno).what());
 	}
-	auto endpoint = we.get_subscribe_endpoint("ipc");
+	auto endpoint = we.get_endpoint(ep_pubsub, et_ipc);
 	zmq_connect_and_log(subscriber, endpoint);
 
 	while (true) {
@@ -92,7 +91,7 @@ void listener_thread_main(worker_engine & we, map<int, int> & msg_counts) {
 
 TEST(worker_engine_test, assignment_mgmt) {
 
-	char const * wargs[] = { "nitro", "--replyport", "36123", "--workfor",
+	char const * wargs[] = { "nitro", "--rrport", "36123", "--workfor",
 			"127.0.0.1:36124" };
 
 	worker_engine we(cmdline(countof(wargs), wargs));
@@ -131,3 +130,4 @@ TEST(worker_engine_test, assignment_mgmt) {
 
 	xlog("should be finishing now");
 }
+

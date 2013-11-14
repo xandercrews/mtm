@@ -13,8 +13,11 @@ namespace zmq {
 
 namespace nitro {
 
-const char * const IPC_PUB_BINDING = "ipc:///tmp/nitro-%1{pid}-%2{style}pub";
-const char * const IPC_REP_BINDING = "ipc:///tmp/nitro-%1{pid}-%2{style}rep";
+const char * const IPC_PUBSUB_ENDPOINT_PATTERN = "ipc:///tmp/nitro-%1{pid}-%2{style}pubsub";
+const char * const IPC_REQREP_ENDPOINT_PATTERN = "ipc:///tmp/nitro-%1{pid}-%2{style}reqrep";
+const char * const INPROC_PUBSUB_ENDPOINT_PATTERN = "inproc://%1{style}pubsub";
+const char * const INPROC_REQREP_ENDPOINT_PATTERN = "inproc://%1{style}reqrep";
+const char * const TCP_BIND_ENDPOINT_PATTERN = "tcp://*:%1";
 
 extern const unsigned MAX_HARDWARE_THREADS;
 
@@ -25,6 +28,23 @@ class cmdline;
  * to interoperate.
  */
 extern const char * const COORDINATION_TOPIC;
+
+/**
+ * Describe which transport we're working with.
+ */
+enum endpoint_transport {
+	et_tcp,
+	et_ipc,
+	et_inproc
+};
+
+/**
+ * Describe how we're using an endpoint.
+ */
+enum endpoint_pattern {
+	ep_pubsub,
+	ep_reqrep,
+};
 
 /**
  * A base class for the workhorses of our application.
@@ -48,34 +68,20 @@ public:
 	char const * get_id() const;
 
 	/**
-	 * Identifies the endpoint to subscribe to if you want to listen to what
-	 * this engine is doing as it runs.
+	 * Name the endpoint to use for interacting with this engine with the
+	 * specified pattern and transport.
 	 */
-	char const * get_subscribe_endpoint(char const * transport) const;
+	char const * get_endpoint(int ep_pattern, int et_transport) const;
 
 	/**
-	 * What port are we listening on?
-	 *
-	 * We may also talk on this port, but we only do it in response to incoming
-	 * requests; we don't proactively use this port to initiate new
-	 * conversations. In this respect, we use the port in much the same way
-	 * as a web server uses ports on which incoming http requests arrive.
+	 * What port are we using for a particular pattern?
 	 */
-	int get_reply_port() const;
+	int get_port(int ep_pattern) const;
 
 	/**
 	 * Should the engine wait for a terminate message before exiting?
 	 */
 	bool get_linger() const;
-
-	/**
-	 * What port do we use to initiate new conversations with others?
-	 *
-	 * In manager mode, we use this port to proactively communicate with our
-	 * workers. In worker mode, we use this port for an occasional status
-	 * report.
-	 */
-	int get_publish_port() const;
 
 	void handle_ping_request(/*zmq::message_t const & msg*/) const;
 	void handle_terminate_request(/*zmq::message_t const & msg*/) const;
@@ -114,16 +120,13 @@ protected:
 	void send_queued();
 
 private:
-	int reply_port;
-	int publish_port;
+	int ports[2];
+
 	void * _ctx;
-	void * _responder;
-	void * _publisher;
+	void * sockets[2];
 	std::string id;
-	std::string ipc_pub_endpoint;
-	std::string tcp_pub_endpoint;
-	std::string ipc_rep_endpoint;
-	std::string tcp_rep_endpoint;
+	std::string endpoints[2][3];
+
 	typedef std::pair<void *, std::string> qmsg_t;
 	std::queue<qmsg_t> send_queue;
 	std::mutex send_queue_mutex;

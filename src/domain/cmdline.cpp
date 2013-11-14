@@ -30,7 +30,7 @@ char const * cmdline::get_valid_flags() const {
  * For the time being, this is as far as I got.
  */
 char const * cmdline::get_valid_options() const {
-	return "--replyport|-r|--publishport|-p|--workfor|-w|--exechost|-e"
+	return "--rrport|-r|--psport|-p|--workfor|-w|--exechost|-e"
 			"|--interface|-i|--linger|-l";
 }
 
@@ -60,8 +60,8 @@ int cmdline::validate_port(char const * port_switch, int exclusive_port) {
 
 void cmdline::parse(int argc, char const ** argv) {
 	cmdline_base::parse(argc, argv);
-	auto n = validate_port("--replyport");
-	validate_port("--publishport", n);
+	auto n = validate_port("--rrport");
+	validate_port("--psport", n);
 }
 
 cmdline::cmdline(int argc, char const ** argv) {
@@ -86,17 +86,17 @@ std::string cmdline::get_help() const {
 		"  Syntax: %2{progname} [flags] [options] [batch file(s)]\n"
 		"\n"
 		"    Flags:\n"
-		"      --help or -h         -- Display this screen.\n"
-		"      --linger or -l       -- Wait for terminate message before exiting.\n"
+		"      --help or -h       -- Display this screen.\n"
+		"      --linger or -l     -- Wait for terminate message before exiting.\n"
 		"\n"
 		"    Options:\n"
-		"      --workfor or -w      -- Take work from coordinator on specified host.\n"
-		"                             (Precludes batch files on cmdline.)\n"
-		"      --replyport or -r    -- Listen on this port (%3{defrport} is default).\n"
-		"      --publishport or -p  -- Talk on this port (%4{defpport} is default).\n"
-        "      --interface or -i    -- NIC for multicast messages (%5{iface} is default).\n"
+		"      --workfor or -w    -- Take work from coordinator on specified host.\n"
+		"                            (Precludes batch files on cmdline.)\n"
+		"      --rrport or -r     -- Request/reply on this port (%3 is default).\n"
+		"      --psport or -p     -- Publish/subscribe on this port (%4 is default).\n"
+        "      --interface or -i  -- NIC for multicast messages (%5{iface} is default).\n"
 		"\n",
-		e, get_program_name(), DEFAULT_REPLY_PORT, DEFAULT_PUBLISH_PORT,
+		e, get_program_name(), DEFAULT_REQREP_PORT, DEFAULT_PUBSUB_PORT,
 		DEFAULT_MULTICAST_INTERFACE
 		);
 }

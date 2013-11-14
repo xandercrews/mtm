@@ -29,44 +29,61 @@ const char * const COORDINATION_TOPIC = events::catalog().get_topic(
 const unsigned MAX_HARDWARE_THREADS = std::max(4u, std::thread::hardware_concurrency());
 
 engine::engine(cmdline const & cmdline) :
-		ctx(_ctx), responder(_responder), publisher(_publisher),
-		reply_port(0), publish_port(0), _ctx(0), _responder(0), _publisher(0),
-		id(), ipc_pub_endpoint(), tcp_pub_endpoint(),
-		ipc_rep_endpoint(), tcp_rep_endpoint(), linger(false) {
+		ctx(_ctx), responder(sockets[ep_reqrep]), publisher(sockets[ep_pubsub]),
+		_ctx(0), id(), linger(false) {
 
-	reply_port = cmdline.get_option_as_int("--replyport", DEFAULT_REPLY_PORT);
-	publish_port = cmdline.get_option_as_int("--publishport", DEFAULT_PUBLISH_PORT);
-	PRECONDITION(reply_port > 1024 && reply_port < 65536);
-	PRECONDITION(publish_port > 1024 && publish_port < 65536);
-	PRECONDITION(reply_port != publish_port);
+	auto reqrep_port = cmdline.get_option_as_int("--rrport", DEFAULT_REQREP_PORT);
+	auto pubsub_port = cmdline.get_option_as_int("--psport", DEFAULT_PUBSUB_PORT);
+	PRECONDITION(reqrep_port > 1024 && reqrep_port < 65536);
+	PRECONDITION(pubsub_port > 1024 && pubsub_port < 65536);
+	PRECONDITION(reqrep_port != pubsub_port);
+
+	ports[ep_reqrep] = reqrep_port;
+	ports[ep_pubsub] = pubsub_port;
+
 	if (cmdline.has_flag("--linger")) {
 		linger = true;
 	}
 
 	id = generate_guid();
+
     _ctx = zmq_ctx_new();
-    _publisher = zmq_socket(_ctx, ZMQ_PUB);
-    _responder = zmq_socket(_ctx, ZMQ_REP);
-    tcp_pub_endpoint = interp("tcp://*:%1", publish_port);
-    tcp_rep_endpoint = interp("tcp://*:%1", reply_port);
-    zmq_bind_and_log(_publisher, tcp_pub_endpoint.c_str());
-    zmq_bind_and_log(_responder, tcp_pub_endpoint.c_str());
+    sockets[ep_pubsub] = zmq_socket(_ctx, ZMQ_PUB);
+    sockets[ep_reqrep] = zmq_socket(_ctx, ZMQ_REP);
+
+    // Figure out what tcp endpoints we're going to be using.
+    endpoints[ep_pubsub][et_tcp] = interp(TCP_BIND_ENDPOINT_PATTERN, pubsub_port);
+    endpoints[ep_reqrep][et_tcp] = interp(TCP_BIND_ENDPOINT_PATTERN, reqrep_port);
+
+    // Bind to tcp.
+    for (int pat = ep_pubsub; pat <= ep_reqrep; ++pat) {
+    	zmq_bind_and_log(sockets[pat], endpoints[pat][et_tcp].c_str());
+    }
 }
 
 engine::~engine() {
-	zmq_close_now(_publisher);
-	zmq_close_now(_responder);
+	for (int pat = ep_pubsub; pat <= ep_reqrep; ++pat) {
+		zmq_close_now(sockets[pat]);
+	}
 	if (ctx) {
 		zmq_ctx_destroy(ctx);
 	}
 }
 
 void engine::bind_after_ctor(char const * style) {
+
 	auto pid = getpid();
-	ipc_pub_endpoint = interp(IPC_PUB_BINDING, pid, style);
-	zmq_bind_and_log(_publisher, ipc_pub_endpoint.c_str());
-	ipc_rep_endpoint = interp(IPC_REP_BINDING, pid, style);
-	zmq_bind_and_log(_responder, ipc_rep_endpoint.c_str());
+
+    endpoints[ep_pubsub][et_ipc] = interp(IPC_PUBSUB_ENDPOINT_PATTERN, pid, style);
+    endpoints[ep_reqrep][et_ipc] = interp(IPC_REQREP_ENDPOINT_PATTERN, pid, style);
+    endpoints[ep_pubsub][et_inproc] = interp(INPROC_PUBSUB_ENDPOINT_PATTERN, style);
+    endpoints[ep_reqrep][et_inproc] = interp(INPROC_REQREP_ENDPOINT_PATTERN, style);
+
+    for (int pat = ep_pubsub; pat <= ep_reqrep; ++pat) {
+    	for (int trans = et_ipc; trans <= et_inproc; ++trans) {
+    		zmq_bind_and_log(sockets[pat], get_endpoint(pat, trans));
+    	}
+    }
 }
 
 char const * engine::get_id() const {
@@ -91,23 +108,15 @@ void engine::send_queued() {
 	}
 }
 
-char const * engine::get_subscribe_endpoint(char const * transport) const {
-	PRECONDITION(transport);
-	if (strcmp(transport, "tcp") == 0) {
-		return tcp_pub_endpoint.c_str();
-	}
-	if (strcmp(transport, "ipc") == 0) {
-		return ipc_pub_endpoint.c_str();
-	}
-	PRECONDITION("transport must be \"tcp\" or \"ipc\"." && false);
+char const * engine::get_endpoint(int ep_pattern, int et_transport) const {
+	PRECONDITION(ep_pattern >= ep_pubsub && ep_pattern <= ep_reqrep);
+	PRECONDITION(et_transport >= et_tcp && et_transport <= et_inproc);
+	return endpoints[ep_pattern][et_transport].c_str();
 }
 
-int engine::get_reply_port() const {
-	return reply_port;
-}
-
-int engine::get_publish_port() const {
-	return publish_port;
+int engine::get_port(int ep_pattern) const {
+	PRECONDITION(ep_pattern >= ep_pubsub && ep_pattern <= ep_reqrep);
+	return ports[ep_pattern];
 }
 
 void engine::handle_ping_request(/*zmq::message_t const & msg*/) const {

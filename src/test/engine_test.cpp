@@ -15,8 +15,8 @@
 using namespace nitro;
 
 engine::handle make_coord_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"nitro", "--replyport", "52500",
-			"--publishport", "52501", "--exechost", "localhost"};
+	char const * def_args[] = {"nitro", "--rrport", "52500",
+			"--psport", "52501", "--exechost", "localhost"};
 	if (!args) {
 		args = def_args;
 		argc = 5;
@@ -31,8 +31,8 @@ engine::handle make_coord_engine(char const ** args = NULL, int argc = 0) {
 }
 
 engine::handle make_worker_engine(char const ** args = NULL, int argc = 0) {
-	char const * def_args[] = {"nitro", "--replyport", "52502",
-			"--publishport", "52503", "--workfor", "tcp://localhost:52500"};
+	char const * def_args[] = {"nitro", "--rrport", "52502",
+			"--psport", "52503", "--workfor", "tcp://localhost:52500"};
 	if (!args) {
 		args = def_args;
 		argc = 7;
@@ -64,44 +64,3 @@ TEST(engine_test, coord_and_worker_can_coexist_on_same_box) {
 	auto worker = make_worker_engine();
 	ASSERT_TRUE(static_cast<bool>(worker));
 }
-
-#define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
-
-#if 0
-void coord_listener_thread_main(coord_engine const & coord,
-		std::vector<std::string> & ) {
-
-	try {
-	    void *context = coord.ctx;
-	    void *subscriber = zmq_socket(context, ZMQ_SUB);
-	    int rc;
-	    tryz(zmq_connect(subscriber, coord.get_subscribe_endpoint("tcp")));
-	    tryz(zmq_setsockopt(subscriber, ZMQ_SUBSCRIBE, "", 0));
-
-	    for (int i = 0; i < 5; ++i) {
-	    	auto txt = receive_full_msg(subscriber);
-	        fprintf(stderr, "%s\n", txt.c_str());
-	    }
-	    zmq_close(subscriber);
-	} catch (std::exception const & e) {
-		fprintf(stderr, "%s\n", e.what());
-	}
-}
-
-TEST(engine_test, complete_batch_lifecycle) {
-	auto coord = make_coord_engine();
-	std::vector<std::string> msgs;
-	// Have to do a little casting here. engine_handle is a handle to the base
-	// class, but we need to pass a ref to the derived class...
-	auto coord_ptr = reinterpret_cast<coord_engine *>(coord.get());
-	std::thread listener(coord_listener_thread_main, std::ref(*coord_ptr),
-			std::ref(msgs));
-	coord->run();
-}
-
-TEST(engine_test, run_sample_batch) {
-	auto coord = make_coord_engine();
-	coord->run();
-	exit(0);
-}
-#endif

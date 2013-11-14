@@ -159,7 +159,7 @@ worker_engine::worker_engine(cmdline const & cmdline) :
 			data->workfor = wf;
 			auto wfport = strrchr(data->workfor.c_str(), ':');
 			if (!wfport) {
-				data->workfor += interp(":%1", DEFAULT_PUBLISH_PORT);
+				data->workfor += interp(":%1", DEFAULT_PUBSUB_PORT);
 			}
 			auto endpoint = interp("tcp://%1", data->workfor);
 			zmq_connect_and_log(subscriber, endpoint.c_str());
