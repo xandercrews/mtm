@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <condition_variable>
+#include <map>
 #include <mutex>
 #include <vector>
 #include <thread>
@@ -12,6 +12,7 @@
 #include "base/strutil.h"
 #include "base/xlog.h"
 
+#include "domain/assignment.h"
 #include "domain/cmdline.h"
 #include "domain/coord_engine.h"
 #include "domain/event_codes.h"
@@ -22,23 +23,31 @@
 
 #include "zeromq/include/zmq.h"
 
-using std::string;
 using std::chrono::milliseconds;
+using std::lock_guard;
+using std::map;
+using std::mutex;
+using std::string;
 
 using namespace nitro::event_codes;
 
 namespace nitro {
 
+typedef map<string, assignment::handle> asgn_map_t;
+
 struct coord_engine::data_t {
 
 	std::unique_ptr<file_lines> current_batch_file;
 	stringlist_t hostlist;
+	asgn_map_t assignments;
+	mutex asgn_mutex;
 	stringlist_t batches;
 	void * requester;
 	stringlist_t workers;
+	bool simulate_workers;
 
 	data_t() :
-			requester(0) {
+			requester(0), simulate_workers(false) {
 	}
 };
 
@@ -66,8 +75,29 @@ coord_engine::~coord_engine() {
 	delete data;
 }
 
+void coord_engine::add_assignment(assignment * ) {
+#if 0
+	if (!asgn) return;
+	lock_guard<mutex> lock(data->asgn_mutex);
+	assignment::handle x(asgn);
+	data->assignments.insert({asgn->get_id(), x});
+#endif
+}
+
+bool coord_engine::get_simulate_workers() const {
+	return data->simulate_workers;
+}
+
+void coord_engine::set_simulate_workers(bool value) {
+	data->simulate_workers = value;
+}
+
 void coord_engine::enroll_workers_multi(int eid) {
 	static const string cfm_port = "50000";
+
+	if (get_simulate_workers()) {
+		return;
+	}
 
 	// Clear workers list
 	data->workers.clear();
@@ -129,6 +159,9 @@ void coord_engine::enroll_workers_multi(int eid) {
 #define tryz(expr) rc = expr; if (rc) throw ERROR_EVENT(errno)
 
 void coord_engine::enroll_workers(int eid) {
+	if (get_simulate_workers()) {
+		return;
+	}
 #if 1
 	if (data->hostlist.empty()) {
 		data->hostlist.push_back("localhost:36000");
@@ -199,6 +232,9 @@ void coord_engine::prioritize(assignment_t & asgn) {
 }
 
 void coord_engine::distribute(assignment_t & asgn) {
+	if (get_simulate_workers()) {
+		return;
+	}
 	auto host = data->hostlist.begin();
 	for (auto cmd : *asgn) {
 		auto endpoint = interp("tcp://%1", *host);

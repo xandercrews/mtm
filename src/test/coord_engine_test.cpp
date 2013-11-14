@@ -25,14 +25,19 @@ void driver_thread_main(coord_engine const & ce) {
 	zsocket_cleaner zclean(requester);
 	auto endpoint = ce.get_endpoint(ep_reqrep, et_inproc);
 	zmq_connect_and_log(requester, endpoint);
+
+	assignment * asgn = new assignment("test");
+	asgn->ready_task(1, "qsub task 1");
+	asgn->ready_task(2, "qsub task 2");
+	asgn->ready_task(3, "qsub task 3");
 }
 
 #if 0
 TEST(coord_engine_test, req_rep) {
-	char const * cargs[] = { "nitro", "--rrport", "36123", "--workfor",
-			"127.0.0.1:36124" };
+	char const * cargs[] = { "nitro", "--linger"};
 
 	coord_engine ce(cmdline(countof(cargs), cargs));
+	ce.set_simulate_workers(true);
 	ce.run();
 }
 #endif

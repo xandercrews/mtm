@@ -23,6 +23,7 @@ const char * const TCP_CONNECT_ENDPOINT_PATTERN = "tcp://%1:%2";
 extern const unsigned MAX_HARDWARE_THREADS;
 
 class cmdline;
+class assignment;
 
 /**
  * Engines subscribe to this topic to hear messages that they need to handle

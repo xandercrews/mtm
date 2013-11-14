@@ -27,6 +27,11 @@ public:
 	void enroll_workers(int eid);
 	void enroll_workers_multi(int eid);
 
+	bool get_simulate_workers() const;
+	void set_simulate_workers(bool value);
+
+	void add_assignment(assignment * asgn);
+
 private:
 	struct data_t;
 	data_t * data;

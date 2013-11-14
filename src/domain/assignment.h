@@ -39,6 +39,12 @@ public:
 	bool is_complete() const;
 
 	/**
+	 * Count how many tasks are in each state. NULL can be passed for any
+	 * parameters that are uninteresting.
+	 */
+	void get_counts(int * ready, int * active, int * complete, int * total);
+
+	/**
 	 * Return a json string suitable for transmitting to a worker to request
 	 * that an assignment be accepted.
 	 */
