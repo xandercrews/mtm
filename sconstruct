@@ -2,7 +2,7 @@
 # to src. Don't define other include paths. This keeps includes exceedingly clean and
 # regular, and it makes includes unambiguous instead of mysterious.
 # Also, force all builds to be done with C++ 11 syntax and libraries.
-env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zeromq/include', '/usr/local/include'], CXXFLAGS='-std=c++0x')
+env = Environment(CPPPATH=['#/src', '#/src/jsoncpp/include', '#/src/zeromq/include', '/usr/local/include'], CXXFLAGS='-std=c++0x', CPPDEFINES=['__STDC_LIMIT_MA
 
 AddOption('--verbose', dest='verbose', action='store_true', help='Display more details during build.')
 AddOption('--release', dest='release', action='store_true', help='Do a release build instead of debug.')
